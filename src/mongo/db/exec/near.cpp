@@ -287,10 +287,6 @@ namespace mongo {
     PlanStage::StageState NearStage::advanceNext(WorkingSetID* toReturn) {
 
         if (_resultBuffer.empty()) {
-
-            getNearStats()->intervalStats.push_back(*_nextIntervalStats);
-            _nextIntervalStats.reset();
-
             // We're done returning the documents buffered for this annulus, so we can
             // clear out our buffered RecordIds.
             _nextIntervalSeen.clear();
