@@ -119,7 +119,7 @@ namespace mongo {
          */
         class iterator {
         public:
-            iterator(WorkingSet* ws, size_t index);
+            iterator(WorkingSet* ws, size_t i);
 
             void operator++();
 
@@ -153,8 +153,8 @@ namespace mongo {
             // The working set we're iterating over. Not owned here.
             WorkingSet* _ws;
 
-            // The index of the member we're currently pointing at.
-            size_t _index;
+            // The iterator for the _used set
+            unordered_set<WorkingSetID>::iterator _it;
         };
 
         WorkingSet::iterator begin();
@@ -184,6 +184,9 @@ namespace mongo {
 
         // An insert-only set of WorkingSetIDs that have been flagged for review.
         unordered_set<WorkingSetID> _flagged;
+
+        // Set of WorkingSetIDs that are in use
+        unordered_set<WorkingSetID> _used;
     };
 
     /**

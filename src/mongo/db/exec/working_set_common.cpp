@@ -26,6 +26,9 @@
  *    it in the license file.
  */
 
+#define MONGO_LOG_DEFAULT_COMPONENT ::mongo::logger::LogComponent::kQuery
+#include "mongo/util/log.h"
+
 #include "mongo/platform/basic.h"
 
 #include "mongo/db/exec/working_set_common.h"
