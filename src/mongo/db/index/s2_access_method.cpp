@@ -35,7 +35,6 @@
 #include "mongo/base/status.h"
 #include "mongo/db/geo/geoparser.h"
 #include "mongo/db/geo/geoconstants.h"
-#include "mongo/db/index/s2_common.h"
 #include "mongo/db/index_names.h"
 #include "mongo/db/index/expression_keys_private.h"
 #include "mongo/db/index/expression_params.h"
@@ -96,9 +95,10 @@ BSONObj S2AccessMethod::fixSpec(const BSONObj& specObj) {
     uassert(17394,
             str::stream() << "unsupported geo index version { " << kIndexVersionFieldName << " : "
                           << indexVersionElt << " }, only support versions: [" << S2_INDEX_VERSION_1
-                          << "," << S2_INDEX_VERSION_2 << "]",
+                          << "," << S2_INDEX_VERSION_2 << "," << S2_INDEX_VERSION_3 << "]",
             indexVersionElt.isNumber() &&
-                (indexVersion == S2_INDEX_VERSION_2 || indexVersion == S2_INDEX_VERSION_1));
+                (indexVersion == S2_INDEX_VERSION_3 || indexVersion == S2_INDEX_VERSION_2 ||
+                 indexVersion == S2_INDEX_VERSION_1));
     return specObj;
 }
 

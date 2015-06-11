@@ -16,6 +16,8 @@ env.Library(
         source=[
             'btree_key_generator.cpp',
             'expression_keys_private.cpp',
+            'expression_params.cpp',
+            's2_indexing_params.cpp',
         ],
         LIBDEPS=[
             '$BUILD_DIR/mongo/bson/bson',
