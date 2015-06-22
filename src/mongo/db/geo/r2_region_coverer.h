@@ -120,6 +120,15 @@ namespace mongo {
         void init(const std::vector<GeoHash>& cellIds);
         bool contains(const GeoHash cellId) const;
         std::string toString() const;
+        void detach(std::vector<GeoHash>* cellIds);
+
+        // Adds the cells to _cellIds and calls normalize()
+        void add(const std::vector<GeoHash>& cellIds);
+
+        // Return true if the cell union intersects the given cell id.
+        bool intersects(const GeoHash& id) const;
+        void getDifference(const R2CellUnion& cellUnion);
+
     private:
         // Normalizes the cell union by discarding cells that are contained by other
         // cells, replacing groups of 4 child cells by their parent cell whenever

@@ -1272,12 +1272,30 @@ namespace mongo {
         TwoDSphereKeyInRegionExpression* keyMatcher =
             new TwoDSphereKeyInRegionExpression(_currBounds, s2Field);
 
-        ExpressionMapping::cover2dsphere(keyMatcher->getRegion(),
-                                         _s2Index->infoObj(),
-                                         coveredIntervals);
+        std::vector<S2CellId> cover = ExpressionMapping::get2dsphereCover(keyMatcher->getRegion(),
+                                                                          _s2Index->infoObj());
+
+        // Generate a covering that does not intersect with any previous coverings
+        S2CellUnion currentUnion;
+        currentUnion.InitRawSwap(&cover);
+        S2CellUnion diffUnion;
+        diffUnion.GetDifference(&currentUnion, &_scannedCells);
+        std::vector<S2CellId> const& diffCover = diffUnion.cell_ids();
+        cover.clear();
+        for (std::vector<S2CellId>::const_iterator it = diffCover.begin();
+                it != diffCover.end(); ++it) {
+            if (keyMatcher->getRegion().MayIntersect(S2Cell(*it))) {
+                cover.push_back(*it);
+            }
+        }
+
+        // Add the cells in this covering to the _scannedCells union
+        _scannedCells.Add(cover);
+
+        ExpressionMapping::getOrderedIntervalList(cover, _s2Index->infoObj(), coveredIntervals);
 
         // IndexScan owns the hash matcher
-        IndexScan* scan = new IndexScanWithMatch(txn, scanParams, workingSet, keyMatcher);
+        IndexScan* scan = new IndexScanWithMatch(txn, scanParams, workingSet, nullptr);
 
         // FetchStage owns index scan
         FetchStage* fetcher(new FetchStage(txn, workingSet, scan, _nearParams.filter, collection));

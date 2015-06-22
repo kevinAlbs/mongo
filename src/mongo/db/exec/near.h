@@ -31,12 +31,15 @@
 #include <boost/scoped_ptr.hpp>
 #include <queue>
 
+#include "third_party/s2/s2cellunion.h"
+
 #include "mongo/base/string_data.h"
 #include "mongo/base/status_with.h"
 #include "mongo/db/catalog/collection.h"
 #include "mongo/db/exec/plan_stage.h"
 #include "mongo/db/exec/plan_stats.h"
 #include "mongo/db/exec/working_set.h"
+#include "mongo/db/geo/r2_region_coverer.h"
 #include "mongo/db/jsobj.h"
 #include "mongo/db/record_id.h"
 #include "mongo/platform/unordered_map.h"
@@ -51,7 +54,7 @@ namespace mongo {
      * Child stages need to implement functionality which:
      *
      * - defines a distance metric
-     * - iterates through ordered distance intervals, nearest to furthest
+     * - iterates through ordered distance intervals, nearest to farthest
      * - provides a covering for each distance interval
      *
      * For example - given a distance search over documents with distances from [0 -> 10], the child
@@ -190,10 +193,10 @@ namespace mongo {
 
         // May need to track disklocs from the child stage to do our own deduping, also to do
         // invalidation of buffered results.
-        unordered_map<RecordId, WorkingSetID, RecordId::Hasher> _nextIntervalSeen;
+        unordered_map<RecordId, WorkingSetID, RecordId::Hasher> _seenDocuments;
 
         // Stats for the stage covering this interval
-        boost::scoped_ptr<IntervalStats> _nextIntervalStats;
+        IntervalStats* _nextIntervalStats;
 
         // Sorted buffered results to be returned - the current interval
         struct SearchResult;

@@ -232,6 +232,17 @@ namespace mongo {
         normalize();
     }
 
+    void R2CellUnion::add(const std::vector<GeoHash>& cellIds) {
+        _cellIds.insert(_cellIds.end(), cellIds.begin(),
+                         cellIds.end());
+        normalize();
+    }
+
+    void R2CellUnion::detach(std::vector<GeoHash>* cellIds) {
+        _cellIds.swap(*cellIds);
+        _cellIds.clear();
+    }
+
     bool R2CellUnion::contains(const GeoHash cellId) const {
         // Since all cells are ordered, if an ancestor of id exists, it must be the previous one.
         vector<GeoHash>::const_iterator it;
@@ -292,6 +303,41 @@ namespace mongo {
         }
         ss << "]";
         return ss.str();
+    }
+
+    bool R2CellUnion::intersects(const GeoHash& id) const {
+        vector<GeoHash>::const_iterator i =
+            lower_bound(_cellIds.begin(), _cellIds.end(), id);
+        if (i != _cellIds.end() && id.contains(*i)) {
+            return true;
+        }
+        return i != _cellIds.begin() && (--i)->contains(id);
+    }
+
+    static void getDifferenceInternal(GeoHash cell,
+                                      R2CellUnion const& cellUnion,
+                                      std::vector<GeoHash>* cellIds) {
+
+        // Add the difference between cell and cellUnion to cellIds.
+        // If they intersect but the difference is non-empty, divides and conquers.
+        if (!cellUnion.intersects(cell)) {
+            cellIds->push_back(cell);
+        } else if (!cellUnion.contains(cell)) {
+            GeoHash children[4];
+            if (cell.subdivide(children)) {
+                for (int i = 0; i < 4; i++) {
+                    getDifferenceInternal(children[i], cellUnion, cellIds);
+                }
+            }
+        }
+    }
+
+    void R2CellUnion::getDifference(const R2CellUnion& cellUnion) {
+        std::vector<GeoHash> diffCellIds;
+        for (size_t i = 0; i < _cellIds.size(); ++i) {
+            getDifferenceInternal(_cellIds[i], cellUnion, &diffCellIds);
+        }
+        _cellIds.swap(diffCellIds);
     }
 
 } /* namespace mongo */

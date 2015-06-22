@@ -34,7 +34,6 @@
 
 #include "mongo/db/geo/geoconstants.h"
 #include "mongo/db/geo/hash.h"
-#include "mongo/db/geo/r2_region_coverer.h"
 #include "mongo/db/hasher.h"
 
 namespace mongo {
@@ -68,7 +67,8 @@ namespace mongo {
     void ExpressionMapping::cover2d(const R2Region& region,
                                     const BSONObj& indexInfoObj,
                                     int maxCoveringCells,
-                                    OrderedIntervalList* oil) {
+                                    OrderedIntervalList* oil,
+                                    R2CellUnion* excludedCells) {
 
         GeoHashConverter::Parameters hashParams;
         Status paramStatus = GeoHashConverter::parseParameters(indexInfoObj, &hashParams);
@@ -82,6 +82,17 @@ namespace mongo {
         // TODO: Maybe slightly optimize by returning results in order
         vector<GeoHash> unorderedCovering;
         coverer.getCovering(region, &unorderedCovering);
+        // If excludedCells is passed in, make sure that none of the cells in the covering overlap
+        // with it by taking the difference between the two regions
+        if (excludedCells != nullptr) {
+            R2CellUnion diffUnion;
+            diffUnion.init(unorderedCovering);
+            diffUnion.getDifference(*excludedCells);
+            diffUnion.detach(&unorderedCovering);
+
+            // Add the cells in this covering to the excludedCells union
+            excludedCells->add(unorderedCovering);
+        }
         set<GeoHash> covering(unorderedCovering.begin(), unorderedCovering.end());
 
         for (set<GeoHash>::const_iterator it = covering.begin(); it != covering.end();
@@ -98,19 +109,16 @@ namespace mongo {
         }
     }
 
-    // TODO: what should we really pass in for indexInfoObj?
-    void ExpressionMapping::cover2dsphere(const S2Region& region,
-                                          const BSONObj& indexInfoObj,
-                                          OrderedIntervalList* oilOut) {
-
+    std::vector<S2CellId> ExpressionMapping::get2dsphereCover(const S2Region& region,
+                                                              const BSONObj& indexInfoObj) {
         int coarsestIndexedLevel;
         BSONElement ce = indexInfoObj["coarsestIndexedLevel"];
         if (ce.isNumber()) {
-            coarsestIndexedLevel = ce.numberInt();
+           coarsestIndexedLevel = ce.numberInt();
         }
         else {
-            coarsestIndexedLevel =
-                S2::kAvgEdge.GetClosestLevel(100 * 1000.0 / kRadiusOfEarthInMeters);
+           coarsestIndexedLevel =
+               S2::kAvgEdge.GetClosestLevel(100 * 1000.0 / kRadiusOfEarthInMeters);
         }
 
         // The min level of our covering is the level whose cells are the closest match to the
@@ -119,11 +127,26 @@ namespace mongo {
         double edgeLen = sqrt(region.GetRectBound().Area());
         S2RegionCoverer coverer;
         coverer.set_min_level(min(coarsestIndexedLevel,
-                                  2 + S2::kAvgEdge.GetClosestLevel(edgeLen)));
+                                 2 + S2::kAvgEdge.GetClosestLevel(edgeLen)));
         coverer.set_max_level(4 + coverer.min_level());
 
-        std::vector<S2CellId> cover;
+        vector<S2CellId> cover;
         coverer.GetCovering(region, &cover);
+        return cover;
+    }
+
+    void ExpressionMapping::getOrderedIntervalList(const std::vector<S2CellId>& cover,
+                                                   const BSONObj& indexInfoObj,
+                                                   OrderedIntervalList* oilOut) {
+        int coarsestIndexedLevel;
+        BSONElement ce = indexInfoObj["coarsestIndexedLevel"];
+        if (ce.isNumber()) {
+           coarsestIndexedLevel = ce.numberInt();
+        }
+        else {
+           coarsestIndexedLevel =
+               S2::kAvgEdge.GetClosestLevel(100 * 1000.0 / kRadiusOfEarthInMeters);
+        }
 
         // Look at the cells we cover and all cells that are within our covering and finer.
         // Anything with our cover as a strict prefix is contained within the cover and should
@@ -207,6 +230,14 @@ namespace mongo {
             cout << "check your assumptions! OIL = " << oilOut->toString() << std::endl;
             verify(0);
         }
+    }
+
+    // TODO: what should we really pass in for indexInfoObj?
+    void ExpressionMapping::cover2dsphere(const S2Region& region,
+                                          const BSONObj& indexInfoObj,
+                                          OrderedIntervalList* oilOut) {
+        std::vector<S2CellId> cover = get2dsphereCover(region, indexInfoObj);
+        getOrderedIntervalList(cover, indexInfoObj, oilOut);
     }
 
 }  // namespace mongo
