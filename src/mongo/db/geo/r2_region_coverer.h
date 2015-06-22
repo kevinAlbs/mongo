@@ -120,6 +120,8 @@ namespace mongo {
         void init(const std::vector<GeoHash>& cellIds);
         bool contains(const GeoHash cellId) const;
         std::string toString() const;
+
+        // Swaps _cellIds with the given vector of cellIds
         void detach(std::vector<GeoHash>* cellIds);
 
         // Adds the cells to _cellIds and calls normalize()
