@@ -30,6 +30,8 @@
 
 #include <boost/scoped_ptr.hpp>
 
+#include "third_party/s2/s2cellunion.h"
+
 #include "mongo/db/exec/near.h"
 #include "mongo/db/exec/working_set.h"
 #include "mongo/db/exec/plan_stats.h"

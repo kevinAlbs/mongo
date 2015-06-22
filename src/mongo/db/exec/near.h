@@ -196,6 +196,7 @@ namespace mongo {
         unordered_map<RecordId, WorkingSetID, RecordId::Hasher> _seenDocuments;
 
         // Stats for the stage covering this interval
+        // This is owned by _stats->specific
         IntervalStats* _nextIntervalStats;
 
         // Sorted buffered results to be returned - the current interval

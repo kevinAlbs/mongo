@@ -80,7 +80,7 @@ namespace mongo {
         coverer.setMaxCells(maxCoveringCells);
 
         // TODO: Maybe slightly optimize by returning results in order
-        vector<GeoHash> unorderedCovering;
+        std::vector<GeoHash> unorderedCovering;
         coverer.getCovering(region, &unorderedCovering);
         // If excludedCells is passed in, make sure that none of the cells in the covering overlap
         // with it by taking the difference between the two regions
@@ -135,17 +135,17 @@ namespace mongo {
         return cover;
     }
 
-    void ExpressionMapping::getOrderedIntervalList(const std::vector<S2CellId>& cover,
-                                                   const BSONObj& indexInfoObj,
-                                                   OrderedIntervalList* oilOut) {
+    void ExpressionMapping::transformToQueryIntervals(const std::vector<S2CellId>& cover,
+                                                      const BSONObj& indexInfoObj,
+                                                      OrderedIntervalList* oilOut) {
         int coarsestIndexedLevel;
         BSONElement ce = indexInfoObj["coarsestIndexedLevel"];
         if (ce.isNumber()) {
-           coarsestIndexedLevel = ce.numberInt();
+            coarsestIndexedLevel = ce.numberInt();
         }
         else {
-           coarsestIndexedLevel =
-               S2::kAvgEdge.GetClosestLevel(100 * 1000.0 / kRadiusOfEarthInMeters);
+            coarsestIndexedLevel =
+                S2::kAvgEdge.GetClosestLevel(100 * 1000.0 / kRadiusOfEarthInMeters);
         }
 
         // Look at the cells we cover and all cells that are within our covering and finer.
@@ -237,7 +237,7 @@ namespace mongo {
                                           const BSONObj& indexInfoObj,
                                           OrderedIntervalList* oilOut) {
         std::vector<S2CellId> cover = get2dsphereCover(region, indexInfoObj);
-        getOrderedIntervalList(cover, indexInfoObj, oilOut);
+        transformToQueryIntervals(cover, indexInfoObj, oilOut);
     }
 
 }  // namespace mongo

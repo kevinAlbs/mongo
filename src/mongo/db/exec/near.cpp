@@ -259,7 +259,7 @@ namespace mongo {
         // Need to check if the next member is in the search interval
         // and that the buffer isn't empty
         WorkingSetID resultID = WorkingSet::INVALID_ID;
-        double memberDistance;
+        double memberDistance = std::numeric_limits<double>::lowest();
         if (!_resultBuffer.empty()) {
             SearchResult result = _resultBuffer.top();
             memberDistance = result.distance;
@@ -285,35 +285,34 @@ namespace mongo {
             invariant(_seenDocuments.empty());
         }
 
-        // The document is in the search interval, so we can return it.
-        if (WorkingSet::INVALID_ID != resultID) {
-            _resultBuffer.pop();
-
-            // If we're returning something, take it out of our RecordId -> WSID map so that future
-            // calls to invalidate don't cause us to take action for a RecordId we're done with.
-            *toReturn = resultID;
-            WorkingSetMember* member = _workingSet->get(*toReturn);
-            if (member->hasLoc()) {
-                _seenDocuments.erase(member->loc);
-            }
-
-            ++_nextIntervalStats->numResultsBuffered;
-
-            // Update buffered distance stats
-            if (_nextIntervalStats->minDistanceBuffered < 0
-                || memberDistance < _nextIntervalStats->minDistanceBuffered) {
-                _nextIntervalStats->minDistanceBuffered = memberDistance;
-            }
-
-            return PlanStage::ADVANCED;
-        }
-        else {
+        // memberDistance > maxDistance, so we need to move to the next interval
+        if (WorkingSet::INVALID_ID == resultID) {
             _nextInterval = nullptr;
             _nextIntervalStats = nullptr;
 
             _searchState = SearchState_Buffering;
             return PlanStage::NEED_TIME;
         }
+
+        _resultBuffer.pop();
+
+        // If we're returning something, take it out of our RecordId -> WSID map so that future
+        // calls to invalidate don't cause us to take action for a RecordId we're done with.
+        *toReturn = resultID;
+        WorkingSetMember* member = _workingSet->get(*toReturn);
+        if (member->hasLoc()) {
+            _seenDocuments.erase(member->loc);
+        }
+
+        ++_nextIntervalStats->numResultsBuffered;
+
+        // Update buffered distance stats
+        if (_nextIntervalStats->minDistanceBuffered < 0
+            || memberDistance < _nextIntervalStats->minDistanceBuffered) {
+            _nextIntervalStats->minDistanceBuffered = memberDistance;
+        }
+
+        return PlanStage::ADVANCED;
     }
 
     bool NearStage::isEOF() {

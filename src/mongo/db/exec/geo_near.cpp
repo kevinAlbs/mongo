@@ -1277,22 +1277,20 @@ namespace mongo {
 
         // Generate a covering that does not intersect with any previous coverings
         S2CellUnion currentUnion;
-        currentUnion.InitRawSwap(&cover);
+        currentUnion.InitSwap(&cover);
         S2CellUnion diffUnion;
         diffUnion.GetDifference(&currentUnion, &_scannedCells);
         std::vector<S2CellId> const& diffCover = diffUnion.cell_ids();
-        cover.clear();
-        for (std::vector<S2CellId>::const_iterator it = diffCover.begin();
-                it != diffCover.end(); ++it) {
-            if (keyMatcher->getRegion().MayIntersect(S2Cell(*it))) {
-                cover.push_back(*it);
+        for (size_t i = 0; i < diffCover.size(); ++i) {
+            if (keyMatcher->getRegion().MayIntersect(S2Cell(diffCover[i]))) {
+                cover.push_back(diffCover[i]);
             }
         }
 
         // Add the cells in this covering to the _scannedCells union
         _scannedCells.Add(cover);
 
-        ExpressionMapping::getOrderedIntervalList(cover, _s2Index->infoObj(), coveredIntervals);
+        ExpressionMapping::transformToQueryIntervals(cover, _s2Index->infoObj(), coveredIntervals);
 
         // IndexScan owns the hash matcher
         IndexScan* scan = new IndexScanWithMatch(txn, scanParams, workingSet, nullptr);

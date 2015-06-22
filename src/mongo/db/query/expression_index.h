@@ -58,10 +58,10 @@ namespace mongo {
         static std::vector<S2CellId> get2dsphereCover(const S2Region& region,
                                                       const BSONObj& indexInfoObj);
 
-        // Generates the ordered interval list for a given covering
-        static void getOrderedIntervalList(const std::vector<S2CellId>& cover,
-                                           const BSONObj& indexInfoObj,
-                                           OrderedIntervalList* oilOut);
+        // Generates the OrderedIntervalList for a given covering
+        static void transformToQueryIntervals(const std::vector<S2CellId>& cover,
+                                              const BSONObj& indexInfoObj,
+                                              OrderedIntervalList* oilOut);
 
         // TODO: what should we really pass in for indexInfoObj?
         // Generates an OrderedIntervalList that covers the entire region
