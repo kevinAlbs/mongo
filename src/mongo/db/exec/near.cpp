@@ -268,21 +268,21 @@ namespace mongo {
             if (memberDistance < _nextInterval->minDistance) {
                 _resultBuffer.pop();
                 _workingSet->free(result.resultID);
+                WorkingSetMember* member = _workingSet->get(result.resultID);
+                if (member->hasLoc()) {
+                    _seenDocuments.erase(member->loc);
+                }
                 return PlanStage::NEED_TIME;
             }
-            bool inInterval = memberDistance >= _nextInterval->minDistance
-                              && (_nextInterval->inclusiveMax ?
+            bool inInterval = _nextInterval->inclusiveMax ?
                                   memberDistance <= _nextInterval->maxDistance :
-                                  memberDistance < _nextInterval->maxDistance);
+                                  memberDistance < _nextInterval->maxDistance;
             if (inInterval) {
                 resultID = result.resultID;
             }
         }
         else {
-
-            // We're done returning the buffered documents, so we can clear
-            // out our buffered RecordIds.
-            _seenDocuments.clear();
+            invariant(_seenDocuments.empty());
         }
 
         // The document is in the search interval, so we can return it.
@@ -314,8 +314,6 @@ namespace mongo {
             _searchState = SearchState_Buffering;
             return PlanStage::NEED_TIME;
         }
-
-
     }
 
     bool NearStage::isEOF() {
