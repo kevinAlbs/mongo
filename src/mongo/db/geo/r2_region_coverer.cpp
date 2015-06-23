@@ -305,7 +305,7 @@ namespace mongo {
     }
 
     bool R2CellUnion::intersects(const GeoHash cellId) const {
-        vector<GeoHash>::const_iterator i =
+        std::vector<GeoHash>::const_iterator i =
             lower_bound(_cellIds.begin(), _cellIds.end(), cellId);
         if (i != _cellIds.end() && cellId.contains(*i)) {
             return true;
@@ -313,19 +313,21 @@ namespace mongo {
         return i != _cellIds.begin() && (--i)->contains(cellId);
     }
 
-    static void getDifferenceInternal(GeoHash cellId,
-                                      R2CellUnion const& cellUnion,
-                                      std::vector<GeoHash>* cellIds) {
+    namespace {
+        void getDifferenceInternal(GeoHash cellId,
+                                          R2CellUnion const& cellUnion,
+                                          std::vector<GeoHash>* cellIds) {
 
-        // Add the difference between cell and cellUnion to cellIds.
-        // If they intersect but the difference is non-empty, divides and conquers.
-        if (!cellUnion.intersects(cellId)) {
-            cellIds->push_back(cellId);
-        } else if (!cellUnion.contains(cellId)) {
-            GeoHash children[4];
-            if (cellId.subdivide(children)) {
-                for (int i = 0; i < 4; i++) {
-                    getDifferenceInternal(children[i], cellUnion, cellIds);
+            // Add the difference between cell and cellUnion to cellIds.
+            // If they intersect but the difference is non-empty, divides and conquers.
+            if (!cellUnion.intersects(cellId)) {
+                cellIds->push_back(cellId);
+            } else if (!cellUnion.contains(cellId)) {
+                GeoHash children[4];
+                if (cellId.subdivide(children)) {
+                    for (int i = 0; i < 4; i++) {
+                        getDifferenceInternal(children[i], cellUnion, cellIds);
+                    }
                 }
             }
         }

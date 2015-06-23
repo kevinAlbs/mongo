@@ -31,6 +31,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <queue>
+#include <vector>
 
 #include "mongo/db/geo/hash.h"
 
