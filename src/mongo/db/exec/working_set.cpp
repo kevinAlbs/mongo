@@ -55,7 +55,6 @@ namespace mongo {
             _data.resize(_data.size() + 1);
             _data.back().nextFreeOrSelf = id;
             _data.back().member = new WorkingSetMember();
-            _used.insert(id);
             return id;
         }
 
@@ -63,7 +62,6 @@ namespace mongo {
         WorkingSetID id = _freeList;
         _freeList = _data[id].nextFreeOrSelf;
         _data[id].nextFreeOrSelf = id; // set to self to mark as in-use
-        _used.insert(id);
         return id;
     }
 
@@ -76,7 +74,6 @@ namespace mongo {
         holder.member->clear();
         holder.nextFreeOrSelf = _freeList;
         _freeList = i;
-        _used.erase(i);
     }
 
     void WorkingSet::flagForReview(const WorkingSetID& i) {
@@ -111,48 +108,57 @@ namespace mongo {
     // Iteration
     //
 
-    WorkingSet::iterator::iterator(WorkingSet* ws, size_t i)
-        : _ws(ws) {
-        if (i == 0)
-            _it = _ws->_used.begin();
-        else
-            _it = _ws->_used.end();
+    WorkingSet::iterator::iterator(WorkingSet* ws, size_t index)
+        : _ws(ws),
+          _index(index) {
+        // If we're currently not pointing at an allocated member, then we have
+        // to advance to the first one, unless we're already at the end.
+        if (_index < _ws->_data.size() && isFree()) {
+            advance();
+        }
     }
 
     void WorkingSet::iterator::advance() {
+        // Move forward at least once in the data list.
+        _index++;
 
+        // While we haven't hit the end and the current member is not in use. (Skips ahead until
+        // we find the next allocated member.)
+        while (_index < _ws->_data.size() && isFree()) {
+            _index++;
+        }
     }
 
     bool WorkingSet::iterator::isFree() const {
-        return false;
+        return _ws->_data[_index].nextFreeOrSelf != _index;
     }
 
     void WorkingSet::iterator::free() {
         dassert(!isFree());
-        _ws->free(*_it);
+        _ws->free(_index);
     }
 
     void WorkingSet::iterator::operator++() {
-        dassert(*_it < _ws->_data.size());
-        ++_it;
+        dassert(_index < _ws->_data.size());
+        advance();
     }
 
     bool WorkingSet::iterator::operator==(const WorkingSet::iterator& other) const {
-        return (_it == other._it);
+        return (_index == other._index);
     }
 
     bool WorkingSet::iterator::operator!=(const WorkingSet::iterator& other) const {
-        return (_it != other._it);
+        return (_index != other._index);
     }
 
     WorkingSetMember& WorkingSet::iterator::operator*() {
-        dassert(*_it < _ws->_data.size() && !isFree());
-        return *_ws->_data[*_it].member;
+        dassert(_index < _ws->_data.size() && !isFree());
+        return *_ws->_data[_index].member;
     }
 
     WorkingSetMember* WorkingSet::iterator::operator->() {
-        dassert(*_it < _ws->_data.size() && !isFree());
-        return _ws->_data[*_it].member;
+        dassert(_index < _ws->_data.size() && !isFree());
+        return _ws->_data[_index].member;
     }
 
     WorkingSet::iterator WorkingSet::begin() {

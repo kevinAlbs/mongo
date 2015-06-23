@@ -28,7 +28,6 @@
 
 #pragma once
 
-#include <boost/scoped_ptr.hpp>
 #include <vector>
 
 #include "mongo/base/disallow_copying.h"
@@ -119,7 +118,7 @@ namespace mongo {
          */
         class iterator {
         public:
-            iterator(WorkingSet* ws, size_t i);
+            iterator(WorkingSet* ws, size_t index);
 
             void operator++();
 
@@ -153,8 +152,8 @@ namespace mongo {
             // The working set we're iterating over. Not owned here.
             WorkingSet* _ws;
 
-            // The iterator for the _used set
-            unordered_set<WorkingSetID>::iterator _it;
+            // The index of the member we're currently pointing at.
+            size_t _index;
         };
 
         WorkingSet::iterator begin();
@@ -184,9 +183,6 @@ namespace mongo {
 
         // An insert-only set of WorkingSetIDs that have been flagged for review.
         unordered_set<WorkingSetID> _flagged;
-
-        // Set of WorkingSetIDs that are in use
-        unordered_set<WorkingSetID> _used;
     };
 
     /**
@@ -341,9 +337,9 @@ namespace mongo {
         size_t getMemUsage() const;
 
     private:
-        boost::scoped_ptr<WorkingSetComputedData> _computed[WSM_COMPUTED_NUM_TYPES];
+        std::unique_ptr<WorkingSetComputedData> _computed[WSM_COMPUTED_NUM_TYPES];
 
-        std::auto_ptr<RecordFetcher> _fetcher;
+        std::unique_ptr<RecordFetcher> _fetcher;
     };
 
 }  // namespace mongo
