@@ -622,4 +622,106 @@ namespace {
         ASSERT_FALSE(annulus.fastContains(box));
     }
 
+    // Returns a vector of adjacent cells at the same level
+    static std::vector<GeoHash> getAdjacentCells(long long startingHash, unsigned bits,
+                                                 unsigned numCells) {
+        std::vector<GeoHash> cellIds;
+        for (unsigned i = 0; i < numCells; i++) {
+            unsigned offset = (i << (2 * (32 - bits)));
+            cellIds.push_back(GeoHash(startingHash + offset, bits));
+        }
+        return cellIds;
+    }
+
+    TEST(R2CellUnion, Intersects) {
+        // An R2CellUnion should intersect with every cell it contains.
+        std::vector<GeoHash> entirePlaneVector;
+        GeoHash entirePlane;
+        entirePlaneVector.push_back(entirePlane);
+        R2CellUnion entirePlaneUnion;
+        entirePlaneUnion.init(entirePlaneVector);
+        ASSERT_TRUE(entirePlaneUnion.intersects(entirePlane));
+        GeoHash childCell1("00");
+        ASSERT_TRUE(entirePlaneUnion.intersects(childCell1));
+        GeoHash childCell2("01");
+        ASSERT_TRUE(entirePlaneUnion.intersects(childCell2));
+        GeoHash childCell3("10");
+        ASSERT_TRUE(entirePlaneUnion.intersects(childCell3));
+        GeoHash childCell4("11");
+        ASSERT_TRUE(entirePlaneUnion.intersects(childCell4));
+
+        // Generate an R2CellUnion with 15 adjacent cells
+        long long startingHash = std::rand() % (std::numeric_limits<long long>::max() - 20) + 10;
+        unsigned bits = 30;
+        unsigned numCells = 15;
+        R2CellUnion connectedUnion;
+        connectedUnion.init(getAdjacentCells(startingHash, bits, numCells));
+
+        // An R2CellUnion should intersect with every cell that contains a member of the union.
+        for (unsigned i = 0; i < numCells; ++i) {
+            unsigned offset = (i << (2 * (32 - bits)));
+            for (unsigned level = 0; level < bits; ++level) {
+                ASSERT_TRUE(connectedUnion.intersects(
+                            GeoHash(startingHash + offset, level)));
+            }
+        }
+
+        // Should not intersect with a cell disjoint to the union
+        unsigned disjointOffset = 1 << (2 * (32 - bits));
+        GeoHash disjointCell(startingHash - disjointOffset, bits);
+        ASSERT_FALSE(connectedUnion.intersects(disjointCell));
+    }
+
+    TEST(R2CellUnion, Difference) {
+        long long startingHash = std::rand() % (std::numeric_limits<long long>::max() - 20) + 10;
+        unsigned bits = 30;
+        unsigned numCells = 10;
+        R2CellUnion x, y;
+        std::vector<GeoHash> xCellIds = getAdjacentCells(startingHash, bits, numCells);
+
+        // Make sure that x and y intersect
+        unsigned offset = (numCells/2) << (2 * (32 - bits));
+        std::vector<GeoHash> yCellIds = getAdjacentCells(startingHash + offset, bits, numCells);
+
+        // Initialize the two cell unions
+        x.init(xCellIds);
+        y.init(yCellIds);
+
+        // Compute the differences x - y and y - x
+        R2CellUnion xMinusY, yMinusX;
+        xMinusY.init(xCellIds);
+        xMinusY.getDifference(y);
+        yMinusX.init(yCellIds);
+        yMinusX.getDifference(x);
+
+        for (size_t i = 0; i < xMinusY.cellIds().size(); ++i) {
+            ASSERT_TRUE(x.contains(xMinusY.cellIds()[i]));
+            ASSERT_FALSE(y.intersects(xMinusY.cellIds()[i]));
+            ASSERT_FALSE(yMinusX.intersects(xMinusY.cellIds()[i]));
+        }
+
+        for (size_t i = 0; i < yMinusX.cellIds().size(); ++i) {
+            ASSERT_TRUE(y.contains(yMinusX.cellIds()[i]));
+            ASSERT_FALSE(x.intersects(yMinusX.cellIds()[i]));
+            ASSERT_FALSE(xMinusY.intersects(yMinusX.cellIds()[i]));
+        }
+
+        // Check that x - y + y contains x U y and y - x + x contains x U y
+        R2CellUnion xMinusYPlusY, yMinusXPlusX;
+        xMinusYPlusY.init(xMinusY.cellIds());
+        xMinusYPlusY.add(y.cellIds());
+        yMinusXPlusX.init(yMinusX.cellIds());
+        yMinusXPlusX.add(x.cellIds());
+
+        for (size_t i = 0; i < x.cellIds().size(); ++i) {
+            ASSERT_TRUE(xMinusYPlusY.contains(x.cellIds()[i]));
+            ASSERT_TRUE(yMinusXPlusX.contains(x.cellIds()[i]));
+        }
+
+        for (size_t i = 0; i < y.cellIds().size(); ++i) {
+            ASSERT_TRUE(xMinusYPlusY.contains(y.cellIds()[i]));
+            ASSERT_TRUE(yMinusXPlusX.contains(y.cellIds()[i]));
+        }
+    }
+
 } // namespace

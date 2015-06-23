@@ -118,17 +118,22 @@ namespace mongo {
     class R2CellUnion : boost::noncopyable {
     public:
         void init(const std::vector<GeoHash>& cellIds);
+        // Returns true if the cell union contains the given cell id.
         bool contains(const GeoHash cellId) const;
+        // Return true if the cell union intersects the given cell id.
+        bool intersects(const GeoHash cellId) const;
         std::string toString() const;
 
-        // Swaps _cellIds with the given vector of cellIds
+        // Direct access to the underlying vector.
+        std::vector<GeoHash> const& cellIds() const { return _cellIds; }
+
+        // Swaps _cellIds with the given vector of cellIds.
         void detach(std::vector<GeoHash>* cellIds);
 
-        // Adds the cells to _cellIds and calls normalize()
+        // Adds the cells to _cellIds and calls normalize().
         void add(const std::vector<GeoHash>& cellIds);
 
-        // Return true if the cell union intersects the given cell id.
-        bool intersects(const GeoHash& id) const;
+        // Subtracts cellUnion from *this
         void getDifference(const R2CellUnion& cellUnion);
 
     private:
