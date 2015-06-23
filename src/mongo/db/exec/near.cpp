@@ -266,12 +266,12 @@ namespace mongo {
 
             // Throw out all documents with memberDistance < minDistance
             if (memberDistance < _nextInterval->minDistance) {
-                _resultBuffer.pop();
-                _workingSet->free(result.resultID);
                 WorkingSetMember* member = _workingSet->get(result.resultID);
                 if (member->hasLoc()) {
                     _seenDocuments.erase(member->loc);
                 }
+                _resultBuffer.pop();
+                _workingSet->free(result.resultID);
                 return PlanStage::NEED_TIME;
             }
             bool inInterval = _nextInterval->inclusiveMax ?

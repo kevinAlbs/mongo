@@ -651,7 +651,8 @@ namespace {
         ASSERT_TRUE(entirePlaneUnion.intersects(childCell4));
 
         // Generate an R2CellUnion with 15 adjacent cells
-        long long startingHash = std::rand() % (std::numeric_limits<long long>::max() - 20) + 10;
+        long long startingHash = std::rand() % (std::numeric_limits<long long>::max() / 2) +
+                (std::numeric_limits<long long>::max() / 4);
         unsigned bits = 30;
         unsigned numCells = 15;
         R2CellUnion connectedUnion;
@@ -673,7 +674,8 @@ namespace {
     }
 
     TEST(R2CellUnion, Difference) {
-        long long startingHash = std::rand() % (std::numeric_limits<long long>::max() - 20) + 10;
+        long long startingHash = std::rand() % (std::numeric_limits<long long>::max() / 2) +
+                (std::numeric_limits<long long>::max() / 4);
         unsigned bits = 30;
         unsigned numCells = 10;
         R2CellUnion x, y;
