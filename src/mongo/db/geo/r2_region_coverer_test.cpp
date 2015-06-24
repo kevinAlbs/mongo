@@ -624,10 +624,10 @@ namespace {
 
     // Returns a vector of adjacent cells at the same level
     static std::vector<GeoHash> getAdjacentCells(long long startingHash, unsigned bits,
-                                                 unsigned numCells) {
+                                                 size_t numCells) {
         std::vector<GeoHash> cellIds;
-        for (unsigned i = 0; i < numCells; i++) {
-            unsigned offset = (i << (2 * (32 - bits)));
+        for (size_t i = 0; i < numCells; i++) {
+            long long offset = i * std::pow(2, (2 * (32 - bits)));
             cellIds.push_back(GeoHash(startingHash + offset, bits));
         }
         return cellIds;
@@ -654,13 +654,13 @@ namespace {
         long long startingHash = std::rand() % (std::numeric_limits<long long>::max() / 2) +
                 (std::numeric_limits<long long>::max() / 4);
         unsigned bits = 30;
-        unsigned numCells = 15;
+        size_t numCells = 15;
         R2CellUnion connectedUnion;
         connectedUnion.init(getAdjacentCells(startingHash, bits, numCells));
 
         // An R2CellUnion should intersect with every cell that contains a member of the union.
-        for (unsigned i = 0; i < numCells; ++i) {
-            unsigned offset = (i << (2 * (32 - bits)));
+        for (size_t i = 0; i < numCells; ++i) {
+            long long offset = i * std::pow(2, (2 * (32 - bits)));
             for (unsigned level = 0; level < bits; ++level) {
                 ASSERT_TRUE(connectedUnion.intersects(
                             GeoHash(startingHash + offset, level)));
@@ -668,7 +668,7 @@ namespace {
         }
 
         // Should not intersect with a cell disjoint to the union
-        unsigned disjointOffset = 1 << (2 * (32 - bits));
+        long long disjointOffset = std::pow(2, (2 * (32 - bits)));
         GeoHash disjointCell(startingHash - disjointOffset, bits);
         ASSERT_FALSE(connectedUnion.intersects(disjointCell));
     }
@@ -677,12 +677,12 @@ namespace {
         long long startingHash = std::rand() % (std::numeric_limits<long long>::max() / 2) +
                 (std::numeric_limits<long long>::max() / 4);
         unsigned bits = 30;
-        unsigned numCells = 10;
+        size_t numCells = 10;
         R2CellUnion x, y;
         std::vector<GeoHash> xCellIds = getAdjacentCells(startingHash, bits, numCells);
 
         // Make sure that x and y intersect
-        unsigned offset = (numCells/2) << (2 * (32 - bits));
+        long long offset = (numCells/2) * std::pow(2, (2 * (32 - bits)));
         std::vector<GeoHash> yCellIds = getAdjacentCells(startingHash + offset, bits, numCells);
 
         // Initialize the two cell unions
