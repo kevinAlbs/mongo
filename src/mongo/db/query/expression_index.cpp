@@ -64,12 +64,9 @@ namespace mongo {
         return result + "]";
     }
 
-    void ExpressionMapping::cover2d(const R2Region& region,
-                                    const BSONObj& indexInfoObj,
-                                    int maxCoveringCells,
-                                    OrderedIntervalList* oil,
-                                    R2CellUnion* excludedCells) {
-
+    std::vector<GeoHash> ExpressionMapping::get2dCovering(const R2Region& region,
+                                                          const BSONObj& indexInfoObj,
+                                                          int maxCoveringCells) {
         GeoHashConverter::Parameters hashParams;
         Status paramStatus = GeoHashConverter::parseParameters(indexInfoObj, &hashParams);
         verify(paramStatus.isOK()); // We validated the parameters when creating the index
@@ -82,17 +79,11 @@ namespace mongo {
         // TODO: Maybe slightly optimize by returning results in order
         std::vector<GeoHash> unorderedCovering;
         coverer.getCovering(region, &unorderedCovering);
-        // If excludedCells is passed in, make sure that none of the cells in the covering overlap
-        // with it by taking the difference between the two regions
-        if (excludedCells != nullptr) {
-            R2CellUnion diffUnion;
-            diffUnion.init(unorderedCovering);
-            diffUnion.getDifference(*excludedCells);
-            diffUnion.detach(&unorderedCovering);
+        return unorderedCovering;
+    }
 
-            // Add the cells in this covering to the excludedCells union
-            excludedCells->add(unorderedCovering);
-        }
+    void ExpressionMapping::transformToQueryIntervals(const std::vector<GeoHash>& unorderedCovering,
+                                                      OrderedIntervalList* oilOut) {
         set<GeoHash> covering(unorderedCovering.begin(), unorderedCovering.end());
 
         for (set<GeoHash>::const_iterator it = covering.begin(); it != covering.end();
@@ -103,14 +94,25 @@ namespace mongo {
             geoHash.appendHashMin(&builder, "");
             geoHash.appendHashMax(&builder, "");
 
-            oil->intervals.push_back(IndexBoundsBuilder::makeRangeInterval(builder.obj(),
+            oilOut->intervals.push_back(IndexBoundsBuilder::makeRangeInterval(builder.obj(),
                                                                            true,
                                                                            true));
         }
     }
 
-    std::vector<S2CellId> ExpressionMapping::get2dsphereCover(const S2Region& region,
-                                                              const BSONObj& indexInfoObj) {
+    void ExpressionMapping::cover2d(const R2Region& region,
+                                    const BSONObj& indexInfoObj,
+                                    int maxCoveringCells,
+                                    OrderedIntervalList* oilOut) {
+
+        std::vector<GeoHash> unorderedCovering = get2dCovering(region,
+                                                               indexInfoObj,
+                                                               maxCoveringCells);
+        transformToQueryIntervals(unorderedCovering, oilOut);
+    }
+
+    std::vector<S2CellId> ExpressionMapping::get2dsphereCovering(const S2Region& region,
+                                                                 const BSONObj& indexInfoObj) {
         int coarsestIndexedLevel;
         BSONElement ce = indexInfoObj["coarsestIndexedLevel"];
         if (ce.isNumber()) {
@@ -236,7 +238,7 @@ namespace mongo {
     void ExpressionMapping::cover2dsphere(const S2Region& region,
                                           const BSONObj& indexInfoObj,
                                           OrderedIntervalList* oilOut) {
-        std::vector<S2CellId> cover = get2dsphereCover(region, indexInfoObj);
+        std::vector<S2CellId> cover = get2dsphereCovering(region, indexInfoObj);
         transformToQueryIntervals(cover, indexInfoObj, oilOut);
     }
 

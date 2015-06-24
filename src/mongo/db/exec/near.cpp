@@ -256,9 +256,9 @@ namespace mongo {
 
     PlanStage::StageState NearStage::advanceNext(WorkingSetID* toReturn) {
 
-        // Need to check if the next member is in the search interval
-        // and that the buffer isn't empty
+        // Check if the next member is in the search interval and that the buffer isn't empty
         WorkingSetID resultID = WorkingSet::INVALID_ID;
+        // memberDistance is initialized to produce an error if used before its value is changed
         double memberDistance = std::numeric_limits<double>::lowest();
         if (!_resultBuffer.empty()) {
             SearchResult result = _resultBuffer.top();
@@ -282,18 +282,20 @@ namespace mongo {
             }
         }
         else {
+            // A document should be in _seenDocuments if and only if it's in _resultBuffer
             invariant(_seenDocuments.empty());
         }
 
-        // memberDistance > maxDistance, so we need to move to the next interval
+        // memberDistance > maxDistance or _resultBuffer is empty,
+        // so we need to move to the next interval
         if (WorkingSet::INVALID_ID == resultID) {
             _nextInterval = nullptr;
             _nextIntervalStats = nullptr;
-
             _searchState = SearchState_Buffering;
             return PlanStage::NEED_TIME;
         }
 
+        // The next document in _resultBuffer is in the search interval, so we can return it
         _resultBuffer.pop();
 
         // If we're returning something, take it out of our RecordId -> WSID map so that future

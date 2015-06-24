@@ -48,15 +48,24 @@ namespace mongo {
 
         static BSONObj hash(const BSONElement& value);
 
+        // Returns a GeoHash vector that covers the region
+        static std::vector<GeoHash> get2dCovering(const R2Region& region,
+                                                           const BSONObj& indexInfoObj,
+                                                           int maxCoveringCells);
+
+        // Generates the OrderedIntervalList for a given covering
+        static void transformToQueryIntervals(const std::vector<GeoHash>& unorderedCovering,
+                                              OrderedIntervalList* oilOut);
+
+        // Generates an OrderedIntervalList that covers the entire region
         static void cover2d(const R2Region& region,
                             const BSONObj& indexInfoObj,
                             int maxCoveringCells,
-                            OrderedIntervalList* oil,
-                            R2CellUnion* excludedCells = nullptr);
+                            OrderedIntervalList* oilOut);
 
         // Returns a vector of S2CellIds that cover the region
-        static std::vector<S2CellId> get2dsphereCover(const S2Region& region,
-                                                      const BSONObj& indexInfoObj);
+        static std::vector<S2CellId> get2dsphereCovering(const S2Region& region,
+                                                         const BSONObj& indexInfoObj);
 
         // Generates the OrderedIntervalList for a given covering
         static void transformToQueryIntervals(const std::vector<S2CellId>& cover,

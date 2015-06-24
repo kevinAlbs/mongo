@@ -821,13 +821,23 @@ namespace mongo {
         const string twoDFieldName = _nearParams.nearQuery->field;
         const int twoDFieldPosition = 0;
 
+        std::vector<GeoHash> unorderedCovering =
+                ExpressionMapping::get2dCovering(*coverRegion,
+                                                 _twoDIndex->infoObj(),
+                                                 internalGeoNearQuery2DMaxCoveringCells);
+
+        // Make sure the same index key isn't visited twice
+        R2CellUnion diffUnion;
+        diffUnion.init(unorderedCovering);
+        diffUnion.getDifference(_scannedCells);
+        diffUnion.detach(&unorderedCovering);
+
+        // Add the cells in this covering to the excludedCells union
+        _scannedCells.add(unorderedCovering);
+
         OrderedIntervalList coveredIntervals;
         coveredIntervals.name = scanParams.bounds.fields[twoDFieldPosition].name;
-
-        ExpressionMapping::cover2d(*coverRegion,
-                                   _twoDIndex->infoObj(),
-                                   internalGeoNearQuery2DMaxCoveringCells,
-                                   &coveredIntervals);
+        ExpressionMapping::transformToQueryIntervals(unorderedCovering, &coveredIntervals);
 
         // Intersect the $near bounds we just generated into the bounds we have for anything else
         // in the scan (i.e. $within)
@@ -853,7 +863,7 @@ namespace mongo {
         }
 
         // IndexScanWithMatch owns the matcher
-        IndexScan* scan = new IndexScanWithMatch(txn, scanParams, workingSet, keyMatcher);
+        IndexScan* scan = new IndexScanWithMatch(txn, scanParams, workingSet, nullptr);
 
         MatchExpression* docMatcher = NULL;
 
@@ -1267,13 +1277,12 @@ namespace mongo {
         const string s2Field = _nearParams.nearQuery->field;
         const int s2FieldPosition = getFieldPosition(_s2Index, s2Field);
         scanParams.bounds.fields[s2FieldPosition].intervals.clear();
-        OrderedIntervalList* coveredIntervals = &scanParams.bounds.fields[s2FieldPosition];
 
         TwoDSphereKeyInRegionExpression* keyMatcher =
             new TwoDSphereKeyInRegionExpression(_currBounds, s2Field);
 
-        std::vector<S2CellId> cover = ExpressionMapping::get2dsphereCover(keyMatcher->getRegion(),
-                                                                          _s2Index->infoObj());
+        std::vector<S2CellId> cover = ExpressionMapping::get2dsphereCovering(keyMatcher->getRegion(),
+                                                                             _s2Index->infoObj());
 
         // Generate a covering that does not intersect with any previous coverings
         S2CellUnion currentUnion;
@@ -1290,6 +1299,7 @@ namespace mongo {
         // Add the cells in this covering to the _scannedCells union
         _scannedCells.Add(cover);
 
+        OrderedIntervalList* coveredIntervals = &scanParams.bounds.fields[s2FieldPosition];
         ExpressionMapping::transformToQueryIntervals(cover, _s2Index->infoObj(), coveredIntervals);
 
         // IndexScan owns the hash matcher
