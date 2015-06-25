@@ -1290,9 +1290,9 @@ namespace mongo {
         S2CellUnion diffUnion;
         diffUnion.GetDifference(&currentUnion, &_scannedCells);
         std::vector<S2CellId> const& diffCover = diffUnion.cell_ids();
-        for (size_t i = 0; i < diffCover.size(); ++i) {
-            if (keyMatcher->getRegion().MayIntersect(S2Cell(diffCover[i]))) {
-                cover.push_back(diffCover[i]);
+        for (auto cellId : diffCover) {
+            if (keyMatcher->getRegion().MayIntersect(S2Cell(cellId))) {
+                cover.push_back(cellId);
             }
         }
 
