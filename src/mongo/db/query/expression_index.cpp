@@ -35,7 +35,10 @@
 #include "mongo/db/geo/geoconstants.h"
 #include "mongo/db/geo/hash.h"
 #include "mongo/db/geo/r2_region_coverer.h"
+#include "mongo/db/geo/s2_keys.h"
 #include "mongo/db/hasher.h"
+#include "mongo/db/index/s2_indexing_params.h"
+#include "mongo/db/index/expression_params.h"
 
 namespace mongo {
 
@@ -110,11 +113,13 @@ void ExpressionMapping::cover2dsphere(const S2Region& region,
     // Look at the cells we cover and all cells that are within our covering and finer.
     // Anything with our cover as a strict prefix is contained within the cover and should
     // be intersection tested.
-    std::set<string> intervalSet;
-    std::set<string> exactSet;
+    std::vector<S2CellId> intervalSet;
+    // There may be duplicates when going up parent cells if two cells share a parent
+    std::unordered_set<S2CellId> exactUnique;
     for (size_t i = 0; i < cover.size(); ++i) {
         S2CellId coveredCell = cover[i];
-        intervalSet.insert(coveredCell.toString());
+
+        intervalSet.push_back(coveredCell);
 
         // Look at the cells that cover us.  We want to look at every cell that contains the
         // covering we would index on if we were to insert the query geometry.  We generate
@@ -137,47 +142,11 @@ void ExpressionMapping::cover2dsphere(const S2Region& region,
             // coarsestIndexedLevel - this can result in S2 failures when level < 0.
 
             coveredCell = coveredCell.parent();
-            exactSet.insert(coveredCell.toString());
+            exactUnique.insert(coveredCell);
         }
     }
-
-    // We turned the cell IDs into strings which define point intervals or prefixes of
-    // strings we want to look for.
-    std::set<std::string>::iterator exactIt = exactSet.begin();
-    std::set<std::string>::iterator intervalIt = intervalSet.begin();
-    while (exactSet.end() != exactIt && intervalSet.end() != intervalIt) {
-        const std::string& exact = *exactIt;
-        const std::string& ival = *intervalIt;
-        if (exact < ival) {
-            // add exact
-            oilOut->intervals.push_back(IndexBoundsBuilder::makePointInterval(exact));
-            exactIt++;
-        } else {
-            std::string end = ival;
-            end[end.size() - 1]++;
-            oilOut->intervals.push_back(
-                IndexBoundsBuilder::makeRangeInterval(ival, end, true, false));
-            intervalIt++;
-        }
-    }
-
-    if (exactSet.end() != exactIt) {
-        verify(intervalSet.end() == intervalIt);
-        do {
-            oilOut->intervals.push_back(IndexBoundsBuilder::makePointInterval(*exactIt));
-            exactIt++;
-        } while (exactSet.end() != exactIt);
-    } else if (intervalSet.end() != intervalIt) {
-        verify(exactSet.end() == exactIt);
-        do {
-            const std::string& ival = *intervalIt;
-            std::string end = ival;
-            end[end.size() - 1]++;
-            oilOut->intervals.push_back(
-                IndexBoundsBuilder::makeRangeInterval(ival, end, true, false));
-            intervalIt++;
-        } while (intervalSet.end() != intervalIt);
-    }
+    std::vector<S2CellId> exactSet(exactUnique.begin(), exactUnique.end());
+    S2CellIdsToIntervals(exactSet, intervalSet, indexingParams, oilOut);
 
     // Make sure that our intervals don't overlap each other and are ordered correctly.
     // This perhaps should only be done in debug mode.

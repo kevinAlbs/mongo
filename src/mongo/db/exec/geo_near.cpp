@@ -41,6 +41,7 @@
 #include "mongo/db/geo/geoconstants.h"
 #include "mongo/db/geo/geoparser.h"
 #include "mongo/db/geo/hash.h"
+#include "mongo/db/geo/s2_keys.h"
 #include "mongo/db/matcher/expression.h"
 #include "mongo/db/query/expression_index.h"
 #include "mongo/db/query/expression_index_knobs.h"
@@ -893,8 +894,12 @@ S2Region* buildS2Region(const R2Annulus& sphereBounds) {
  */
 class TwoDSphereKeyInRegionExpression : public LeafMatchExpression {
 public:
-    TwoDSphereKeyInRegionExpression(const R2Annulus& bounds, StringData twoDSpherePath)
-        : LeafMatchExpression(INTERNAL_2DSPHERE_KEY_IN_REGION), _region(buildS2Region(bounds)) {
+    TwoDSphereKeyInRegionExpression(const R2Annulus& bounds,
+                                    S2IndexVersion indexVersion,
+                                    StringData twoDSpherePath)
+        : LeafMatchExpression(INTERNAL_2DSPHERE_KEY_IN_REGION),
+          _region(buildS2Region(bounds)),
+          _indexVersion(indexVersion) {
         initPath(twoDSpherePath);
     }
 
@@ -905,9 +910,16 @@ public:
     }
 
     virtual bool matchesSingleElement(const BSONElement& e) const {
-        // Something has gone terribly wrong if this doesn't hold.
-        invariant(String == e.type());
-        S2Cell keyCell = S2Cell(S2CellId::FromString(e.str()));
+        S2Cell keyCell;
+        if (_indexVersion < S2_INDEX_VERSION_3) {
+            // Something has gone terribly wrong if this doesn't hold.
+            invariant(String == e.type());
+            keyCell = S2Cell(S2CellId::FromString(e.str()));
+        } else {
+            // Something has gone terribly wrong if this doesn't hold.
+            invariant(NumberLong == e.type());
+            keyCell = S2Cell(S2CellIdFromIndexKey(e.numberLong()));
+        }
         return _region->MayIntersect(keyCell);
     }
 
@@ -935,6 +947,7 @@ public:
 
 private:
     const unique_ptr<S2Region> _region;
+    const S2IndexVersion _indexVersion;
 };
 }
 
@@ -944,7 +957,7 @@ public:
     DensityEstimator(const IndexDescriptor* s2Index,
                      const GeoNearParams* nearParams,
                      const S2IndexingParams& indexParams)
-        : _s2Index(s2Index), _nearParams(nearParams), _currentLevel(0) {
+        : _s2Index(s2Index), _nearParams(nearParams), _indexParams(indexParams), _currentLevel(0) {
         // Since cellId.AppendVertexNeighbors(level, output) requires level < cellId.level(),
         // we have to start to find documents at most S2::kMaxCellLevel - 1. Thus the finest
         // search area is 16 * finest cell area at S2::kMaxCellLevel, which is less than
@@ -969,6 +982,7 @@ private:
 
     const IndexDescriptor* _s2Index;   // Not owned here.
     const GeoNearParams* _nearParams;  // Not owned here.
+    const S2IndexingParams _indexParams;
     int _currentLevel;
     unique_ptr<IndexScan> _indexScan;
 };
@@ -999,20 +1013,7 @@ void GeoNear2DSphereStage::DensityEstimator::buildIndexScan(OperationContext* tx
     invariant(_currentLevel < centerId.level());
     centerId.AppendVertexNeighbors(_currentLevel, &neighbors);
 
-    // Convert S2CellId to string and sort
-    vector<string> neighborKeys;
-    for (vector<S2CellId>::const_iterator it = neighbors.begin(); it != neighbors.end(); it++) {
-        neighborKeys.push_back(it->toString());
-    }
-    std::sort(neighborKeys.begin(), neighborKeys.end());
-
-    for (vector<string>::const_iterator it = neighborKeys.begin(); it != neighborKeys.end(); it++) {
-        // construct interval [*it, end) for this cell.
-        std::string end = *it;
-        end[end.size() - 1]++;
-        coveredIntervals->intervals.push_back(
-            IndexBoundsBuilder::makeRangeInterval(*it, end, true, false));
-    }
+    S2CellIdsToIntervals(neighbors, _indexParams, coveredIntervals);
 
     invariant(coveredIntervals->isValidFor(1));
 
@@ -1188,7 +1189,7 @@ StatusWith<NearStage::CoveredInterval*>  //
     OrderedIntervalList* coveredIntervals = &scanParams.bounds.fields[s2FieldPosition];
 
     TwoDSphereKeyInRegionExpression* keyMatcher =
-        new TwoDSphereKeyInRegionExpression(_currBounds, s2Field);
+        new TwoDSphereKeyInRegionExpression(_currBounds, _indexParams.indexVersion, s2Field);
 
     ExpressionMapping::cover2dsphere(keyMatcher->getRegion(), _indexParams, coveredIntervals);
 
