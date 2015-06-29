@@ -33,6 +33,11 @@
 
 namespace mongo {
 
+class GeometryContainer;
+
+// Points will only be indexed at this level
+const int kPointIndexedLevel = S2::kMaxCellLevel;
+
 // An enum describing the version of an S2 index.
 enum S2IndexVersion {
     // The first version of the S2 index, introduced in MongoDB 2.4.0.  Compatible with MongoDB
@@ -56,9 +61,9 @@ struct S2IndexingParams {
     // This is really an advisory parameter that we pass to the cover generator.  The
     // finest/coarsest index level determine the required # of cells.
     int maxCellsInCovering;
-    // What's the finest grained level that we'll index?
+    // What's the finest grained level that we'll index for non-points?
     int finestIndexedLevel;
-    // And, what's the coarsest?  When we search in larger coverings
+    // And, what's the coarsest for non-points?  When we search in larger coverings
     // we know we can stop here -- we index nothing coarser than this.
     int coarsestIndexedLevel;
     // Version of this index (specific to the index type).
@@ -68,7 +73,7 @@ struct S2IndexingParams {
 
     std::string toString() const;
 
-    void configureCoverer(S2RegionCoverer* coverer) const;
+    void configureCoverer(const GeometryContainer& geoContainer, S2RegionCoverer* coverer) const;
 };
 
 }  // namespace mongo
