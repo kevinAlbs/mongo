@@ -623,8 +623,7 @@ namespace {
     }
 
     // Returns a vector of adjacent cells at the same level
-    std::vector<GeoHash> getAdjacentCells(long long startingHash, unsigned bits,
-                                                 size_t numCells) {
+    std::vector<GeoHash> getAdjacentCells(long long startingHash, unsigned bits, size_t numCells) {
         std::vector<GeoHash> cellIds;
         for (size_t i = 0; i < numCells; i++) {
             long long offset = i * std::pow(2, (2 * (32 - bits)));
@@ -637,7 +636,9 @@ namespace {
         return (std::rand() % num) == 0;
     }
 
-    void addCells(GeoHash const& id, bool selected, std::vector<GeoHash>* input,
+    void addCells(GeoHash const& id,
+                  bool selected,
+                  std::vector<GeoHash>* input,
                   std::vector<GeoHash>* expected) {
 
         // This is a leaf cell and cannot be subdivided further, so it must be added
