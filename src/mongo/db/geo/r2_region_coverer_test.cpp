@@ -623,7 +623,7 @@ namespace {
     }
 
     // Returns a vector of adjacent cells at the same level
-    static std::vector<GeoHash> getAdjacentCells(long long startingHash, unsigned bits,
+    std::vector<GeoHash> getAdjacentCells(long long startingHash, unsigned bits,
                                                  size_t numCells) {
         std::vector<GeoHash> cellIds;
         for (size_t i = 0; i < numCells; i++) {
@@ -633,7 +633,104 @@ namespace {
         return cellIds;
     }
 
+    bool oneIn(unsigned num) {
+        return (std::rand() % num) == 0;
+    }
+
+    void addCells(GeoHash const& id, bool selected, std::vector<GeoHash>* input,
+                  std::vector<GeoHash>* expected) {
+
+        // This is a leaf cell and cannot be subdivided further, so it must be added
+        if (id.getBits() == 32) {
+            input->push_back(id);
+            return;
+        }
+
+        // If the parent cell was not selected, this cell will be selected with a probability
+        // proportional to its level, so smaller cells are more likely to be selected.
+        if (!selected && oneIn(32 - id.getBits())) {
+            expected->push_back(id);
+            selected = true;
+        }
+
+        // If this cell is selected, we can either add it or another set of cells that
+        // cover the same region.
+        bool added = false;
+        if (selected && !oneIn(6)) {
+            input->push_back(id);
+            added = true;
+        }
+
+        // Add all the children of this cell if it was selected, but not added.
+        // Randomly add other children cells
+        int numChildren = 0;
+        GeoHash children[4];
+        id.subdivide(children);
+        for (int pos = 0; pos < 4; ++pos) {
+            if (oneIn(selected ? 12 : 4) && numChildren < 3) {
+                addCells(children[pos], selected, input, expected);
+                ++numChildren;
+            }
+            if (selected && !added) {
+                addCells(children[pos], selected, input, expected);
+            }
+        }
+    }
+
+    TEST(R2CellUnion, Normalize) {
+        for (int i = 0; i < 2000; ++i) {
+            std::vector<GeoHash> input, expected;
+            addCells(GeoHash(), false, &input, &expected);
+
+            // Initialize with unnormalized input
+            R2CellUnion cellUnion;
+            cellUnion.init(input);
+
+            // Check to make sure the cells in cellUnion equal the expected cells
+            ASSERT_EQUALS(expected.size(), cellUnion.cellIds().size());
+            for (size_t i = 0; i < expected.size(); ++i) {
+                ASSERT_EQUALS(expected[i], cellUnion.cellIds()[i]);
+            }
+        }
+    }
+
+    void testContains(const R2CellUnion& cellUnion, GeoHash id, int num) {
+        // Breadth first check of the child cells to make sure that each one is contained
+        // in cellUnion
+        std::queue<GeoHash> ids;
+        ids.push(id);
+        int cellsChecked = 0;
+        while (!ids.empty() && cellsChecked < num) {
+            ++cellsChecked;
+            GeoHash currentId = ids.front();
+            ids.pop();
+            ASSERT_TRUE(cellUnion.contains(currentId));
+            if (currentId.getBits() < 32) {
+                GeoHash children[4];
+                currentId.subdivide(children);
+                for (int i = 0; i < 4; ++i) {
+                    ids.push(children[i]);
+                }
+            }
+        }
+    }
+
+    TEST(R2CellUnion, Contains) {
+
+        // An R2CellUnion should contain every cell that its contained by one of its member cells
+        for (int i = 0; i < 2000; ++i) {
+            std::vector<GeoHash> unnormalized, normalized;
+            addCells(GeoHash(), false, &unnormalized, &normalized);
+            R2CellUnion cellUnion;
+            cellUnion.init(normalized);
+            for (GeoHash id : normalized) {
+                testContains(cellUnion, id, 100);
+            }
+        }
+    }
+
     TEST(R2CellUnion, Intersects) {
+
         // An R2CellUnion should intersect with every cell it contains.
         std::vector<GeoHash> entirePlaneVector;
         GeoHash entirePlane;
@@ -650,42 +747,35 @@ namespace {
         GeoHash childCell4("11");
         ASSERT_TRUE(entirePlaneUnion.intersects(childCell4));
 
-        // Generate an R2CellUnion with 15 adjacent cells
-        long long startingHash = std::rand() % (std::numeric_limits<long long>::max() / 2) +
-                (std::numeric_limits<long long>::max() / 4);
-        unsigned bits = 30;
-        size_t numCells = 15;
-        R2CellUnion connectedUnion;
-        connectedUnion.init(getAdjacentCells(startingHash, bits, numCells));
+        for (int i = 0; i < 2000; ++i) {
+            long long startingHash = std::rand() % std::numeric_limits<long long>::max() -
+                    (std::numeric_limits<long long>::max() / 2);
+            unsigned bits = std::rand() % 16 + 16;
+            size_t numCells = std::rand() % 100;
+            R2CellUnion connectedUnion;
+            connectedUnion.init(getAdjacentCells(startingHash, bits, numCells));
 
-        // An R2CellUnion should intersect with every cell that contains a member of the union.
-        for (size_t i = 0; i < numCells; ++i) {
-            long long offset = i * std::pow(2, (2 * (32 - bits)));
-            for (unsigned level = 0; level < bits; ++level) {
-                ASSERT_TRUE(connectedUnion.intersects(
-                            GeoHash(startingHash + offset, level)));
+            // An R2CellUnion should intersect with every cell that contains a member of the union.
+            // It should also intersect with cells it contains
+            for (size_t i = 0; i < numCells; ++i) {
+                long long offset = i * std::pow(2, (2 * (32 - bits)));
+                for (unsigned level = 0; level <= 32; ++level) {
+                    ASSERT_TRUE(connectedUnion.intersects(
+                                GeoHash(startingHash + offset, level)));
+                }
             }
-        }
 
-        // Should not intersect with a cell disjoint to the union
-        long long disjointOffset = std::pow(2, (2 * (32 - bits)));
-        GeoHash disjointCell(startingHash - disjointOffset, bits);
-        ASSERT_FALSE(connectedUnion.intersects(disjointCell));
+            // Should not intersect with a cell disjoint to the union
+            long long disjointOffset = std::pow(2, (2 * (32 - bits)));
+            GeoHash disjointCell(startingHash - disjointOffset, bits);
+            ASSERT_FALSE(connectedUnion.intersects(disjointCell));
+        }
     }
 
-    TEST(R2CellUnion, Difference) {
-        long long startingHash = std::rand() % (std::numeric_limits<long long>::max() / 2) +
-                (std::numeric_limits<long long>::max() / 4);
-        unsigned bits = 30;
-        size_t numCells = 10;
-        R2CellUnion x, y;
-        std::vector<GeoHash> xCellIds = getAdjacentCells(startingHash, bits, numCells);
-
-        // Make sure that x and y intersect
-        long long offset = (numCells/2) * std::pow(2, (2 * (32 - bits)));
-        std::vector<GeoHash> yCellIds = getAdjacentCells(startingHash + offset, bits, numCells);
+    void testDifference(std::vector<GeoHash>& xCellIds, std::vector<GeoHash>& yCellIds) {
 
         // Initialize the two cell unions
+        R2CellUnion x, y;
         x.init(xCellIds);
         y.init(yCellIds);
 
@@ -723,6 +813,30 @@ namespace {
         for (size_t i = 0; i < y.cellIds().size(); ++i) {
             ASSERT_TRUE(xMinusYPlusY.contains(y.cellIds()[i]));
             ASSERT_TRUE(yMinusXPlusX.contains(y.cellIds()[i]));
+        }
+    }
+
+    TEST(R2CellUnion, Difference) {
+        for (int i = 0; i < 2000; ++i) {
+            // Test with two sets of cells that intersect with each other
+            long long startingHash = std::rand() % std::numeric_limits<long long>::max() -
+                    (std::numeric_limits<long long>::max() / 2);
+            unsigned bits = std::rand() % 16 + 16;
+            size_t numCells = std::rand() % 100;
+            std::vector<GeoHash> xCellIds = getAdjacentCells(startingHash, bits, numCells);
+            // Make sure that x and y intersect
+            long long offset = (numCells/2) * std::pow(2, (2 * (32 - bits)));
+            std::vector<GeoHash> yCellIds = getAdjacentCells(startingHash + offset, bits, numCells);
+            testDifference(xCellIds, yCellIds);
+
+            std::vector<GeoHash> xUnnormalized, xNormalized;
+            addCells(GeoHash(), false, &xUnnormalized, &xNormalized);
+            std::vector<GeoHash> yUnnormalized, yNormalized;
+            addCells(GeoHash(), false, &yUnnormalized, &yNormalized);
+            // Test with two unions that contain each other
+            testDifference(xUnnormalized, xNormalized);
+            // Test with random unions
+            testDifference(xUnnormalized, yUnnormalized);
         }
     }
 
