@@ -564,7 +564,7 @@ namespace mongo {
                 return false;
             }
 
-            virtual LeafMatchExpression* shallowClone() const {
+            virtual std::unique_ptr<MatchExpression> shallowClone() const {
                 invariant(false);
                 return NULL;
             }
@@ -617,7 +617,7 @@ namespace mongo {
                 return true;
             }
 
-            virtual MatchExpression* shallowClone() const {
+            virtual std::unique_ptr<MatchExpression> shallowClone() const {
                 invariant(false);
                 return NULL;
             }
@@ -858,7 +858,7 @@ namespace mongo {
         if (_nearParams.filter) {
             AndMatchExpression* andMatcher = new AndMatchExpression();
             andMatcher->add(keyMatcher);
-            andMatcher->add(_nearParams.filter->shallowClone());
+            andMatcher->add(_nearParams.filter->shallowClone().release());
             keyMatcher = andMatcher;
         }
 
@@ -1012,7 +1012,7 @@ namespace mongo {
                 return true;
             }
 
-            virtual MatchExpression* shallowClone() const {
+            virtual std::unique_ptr<MatchExpression> shallowClone() const {
                 invariant(false);
                 return NULL;
             }

@@ -379,12 +379,12 @@ namespace mongo {
         return children;
     }
 
-    PlanStageStats* NearStage::getStats() {
+    std::unique_ptr<PlanStageStats> NearStage::getStats() {
         PlanStageStats* statsClone = _stats->clone();
         for (size_t i = 0; i < _childrenIntervals.size(); ++i) {
-            statsClone->children.push_back(_childrenIntervals[i]->covering->getStats());
+            statsClone->children.push_back(_childrenIntervals[i]->covering->getStats().release());
         }
-        return statsClone;
+        return std::unique_ptr<PlanStageStats>(statsClone);
     }
 
     StageType NearStage::stageType() const {
