@@ -18,24 +18,28 @@ env.Library(
         'legacy_dist_lock_pinger.cpp',
     ],
     LIBDEPS=[
+        'mongo_version_range',
         '$BUILD_DIR/mongo/s/catalog/catalog_manager',
         '$BUILD_DIR/mongo/s/catalog/dist_lock_manager',
-        '$BUILD_DIR/mongo/s/client/sharding_client',
     ]
 )
 
-
-env.CppUnitTest(
-    target='catalog_manager_legacy_test',
+env.Library(
+    target='mongo_version_range',
     source=[
-        'config_coordinator_test.cpp',
+        'mongo_version_range.cpp',
     ],
     LIBDEPS=[
-        'catalog_manager_legacy',
-        '$BUILD_DIR/mongo/db/coredb',
-        '$BUILD_DIR/mongo/db/auth/authorization_manager_mock_init',
-        '$BUILD_DIR/mongo/s/coreshard',
-        '$BUILD_DIR/mongo/s/mongoscore',
+        '$BUILD_DIR/mongo/s/base',
     ]
 )
 
+env.CppUnitTest(
+    target='mongo_version_range_test',
+    source=[
+        'mongo_version_range_test.cpp',
+    ],
+    LIBDEPS=[
+        'mongo_version_range',
+    ]
+)
