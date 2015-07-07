@@ -726,10 +726,7 @@ namespace {
     }
 
     void testContains(const R2CellUnion& cellUnion, GeoHash id, int num) {
-<<<<<<< HEAD
-=======
 
->>>>>>> r2
         // Breadth first check of the child cells to make sure that each one is contained
         // in cellUnion
         std::queue<GeoHash> ids;
