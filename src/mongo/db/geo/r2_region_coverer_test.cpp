@@ -726,6 +726,10 @@ namespace {
     }
 
     void testContains(const R2CellUnion& cellUnion, GeoHash id, int num) {
+<<<<<<< HEAD
+=======
+
+>>>>>>> r2
         // Breadth first check of the child cells to make sure that each one is contained
         // in cellUnion
         std::queue<GeoHash> ids;
@@ -781,7 +785,7 @@ namespace {
         for (int k = 0; k < 2000; ++k) {
             long long startingHash = random(std::numeric_limits<long long>::max()) -
                                 (std::numeric_limits<long long>::max() / 2);
-            unsigned bits = random(16u) + 16;
+            unsigned bits = random(16U) + 16;
             long long numCells = random(100LL);
             R2CellUnion connectedUnion;
             connectedUnion.init(generateAdjacentCells(startingHash, bits, numCells));
@@ -852,7 +856,7 @@ namespace {
             // Test with two sets of cells that intersect with each other
             long long startingHash = random(std::numeric_limits<long long>::max()) -
                     (std::numeric_limits<long long>::max() / 2);
-            unsigned bits = random(16u) + 16;
+            unsigned bits = random(16U) + 16;
             long long numCells = random(100LL);
             std::vector<GeoHash> xCellIds = generateAdjacentCells(startingHash, bits, numCells);
             // Make sure that x and y intersect
