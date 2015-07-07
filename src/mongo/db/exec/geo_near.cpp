@@ -865,7 +865,7 @@ namespace mongo {
         // IndexScanWithMatch owns the matcher
         IndexScan* scan = new IndexScanWithMatch(txn, scanParams, workingSet, nullptr);
 
-        MatchExpression* docMatcher = NULL;
+        MatchExpression* docMatcher = nullptr;
 
         // FLAT searches need to add an additional annulus $within matcher, see above
         if (FLAT == queryCRS) {
@@ -1277,12 +1277,10 @@ namespace mongo {
         const string s2Field = _nearParams.nearQuery->field;
         const int s2FieldPosition = getFieldPosition(_s2Index, s2Field);
         scanParams.bounds.fields[s2FieldPosition].intervals.clear();
+        boost::scoped_ptr<S2Region> region(buildS2Region(_currBounds));
 
-        TwoDSphereKeyInRegionExpression* keyMatcher =
-            new TwoDSphereKeyInRegionExpression(_currBounds, s2Field);
-
-        std::vector<S2CellId> cover = ExpressionMapping::get2dsphereCovering(keyMatcher->getRegion(),
-                                                                             _s2Index->infoObj());
+        std::vector<S2CellId> cover =
+                ExpressionMapping::get2dsphereCovering(*region, _s2Index->infoObj());
 
         // Generate a covering that does not intersect with any previous coverings
         S2CellUnion currentUnion;
@@ -1291,7 +1289,7 @@ namespace mongo {
         diffUnion.GetDifference(&currentUnion, &_scannedCells);
         std::vector<S2CellId> const& diffCover = diffUnion.cell_ids();
         for (auto cellId : diffCover) {
-            if (keyMatcher->getRegion().MayIntersect(S2Cell(cellId))) {
+            if (region->MayIntersect(S2Cell(cellId))) {
                 cover.push_back(cellId);
             }
         }
