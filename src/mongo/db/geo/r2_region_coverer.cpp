@@ -28,6 +28,8 @@
 
 #define MONGO_LOG_DEFAULT_COMPONENT ::mongo::logger::LogComponent::kQuery
 
+#include <algorithm>
+
 #include "mongo/platform/basic.h"
 
 #include "mongo/db/geo/shapes.h"
@@ -245,7 +247,7 @@ namespace mongo {
     bool R2CellUnion::contains(const GeoHash cellId) const {
         // Since all cells are ordered, if an ancestor of id exists, it must be the previous one.
         vector<GeoHash>::const_iterator it;
-        it = upper_bound(_cellIds.begin(), _cellIds.end(), cellId); // it > cellId
+        it = std::upper_bound(_cellIds.begin(), _cellIds.end(), cellId); // it > cellId
         return it != _cellIds.begin() && (--it)->contains(cellId); // --it <= cellId
     }
 
@@ -305,8 +307,12 @@ namespace mongo {
     }
 
     bool R2CellUnion::intersects(const GeoHash cellId) const {
+
+        // After normalization, the cells will be ordered.
+        // cellId intersects with the union if and only if it either contains or is contained by
+        // a member of the union.
         std::vector<GeoHash>::const_iterator i =
-            lower_bound(_cellIds.begin(), _cellIds.end(), cellId);
+            std::lower_bound(_cellIds.begin(), _cellIds.end(), cellId);
         if (i != _cellIds.end() && cellId.contains(*i)) {
             return true;
         }
@@ -315,8 +321,8 @@ namespace mongo {
 
     namespace {
         void getDifferenceInternal(GeoHash cellId,
-                                          R2CellUnion const& cellUnion,
-                                          std::vector<GeoHash>* cellIds) {
+                                   R2CellUnion const& cellUnion,
+                                   std::vector<GeoHash>* cellIds) {
 
             // Add the difference between cell and cellUnion to cellIds.
             // If they intersect but the difference is non-empty, divides and conquers.
