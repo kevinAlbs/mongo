@@ -17,7 +17,7 @@ res = coll.ensureIndex({geo: "2dsphere"}, {"2dsphereIndexVersion": 0});
 assert.commandFailed(res);
 coll.drop();
 
-res = coll.ensureIndex({geo: "2dsphere"}, {"2dsphereIndexVersion": 3});
+res = coll.ensureIndex({geo: "2dsphere"}, {"2dsphereIndexVersion": 4});
 assert.commandFailed(res);
 coll.drop();
 
