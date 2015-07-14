@@ -45,9 +45,9 @@ void S2CellIdsToIntervals(const std::vector<S2CellId>& intervalSet,
                           const S2IndexingParams& indexParams,
                           OrderedIntervalList* oilOut);
 
-// Creates an ordered interval list from both point intervals and range intervals
-void S2CellIdsToIntervals(const std::vector<S2CellId>& exact,
-                          const std::vector<S2CellId>& interval,
+// Creates an ordered interval list from range intervals and
+// traverses cell parents for exact intervals up to coarsestIndexedLevel
+void S2CellIdsToIntervalsWithParents(const std::vector<S2CellId>& interval,
                           const S2IndexingParams& indexParams,
                           OrderedIntervalList* out);
 }

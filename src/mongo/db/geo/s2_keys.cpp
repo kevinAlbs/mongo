@@ -78,7 +78,6 @@ bool compareIntervals(const Interval& a, const Interval& b) {
 void S2CellIdsToIntervalsUnsorted(const std::vector<S2CellId>& intervalSet,
                           const S2IndexingParams& indexParams,
                           OrderedIntervalList* oilOut) {
-    std::vector<mongo::Interval>& intervals = oilOut->intervals;
 
     for (const S2CellId& interval : intervalSet) {
         BSONObjBuilder b;
@@ -89,14 +88,14 @@ void S2CellIdsToIntervalsUnsorted(const std::vector<S2CellId>& intervalSet,
             end[start.size() - 1]++;
             b.append("start", start);
             b.append("end", end);
-            intervals.push_back(IndexBoundsBuilder::makeRangeInterval(b.obj(), true, false));
+            oilOut->intervals.push_back(IndexBoundsBuilder::makeRangeInterval(b.obj(), true, false));
         } else {
             long long start, end;
             S2CellIdToIndexRange(interval, &start, &end);
             b.append("start", start);
             b.append("end", end);
             // note: numeric form of S2CellId is end inclusive
-            intervals.push_back(IndexBoundsBuilder::makeRangeInterval(b.obj(), true, true));
+            oilOut->intervals.push_back(IndexBoundsBuilder::makeRangeInterval(b.obj(), true, true));
         }
     }
 }
@@ -112,11 +111,37 @@ void S2CellIdsToIntervals(const std::vector<S2CellId>& intervalSet,
     std::sort(oilOut->intervals.begin(), oilOut->intervals.end(), compareIntervals);
 }
 
-void S2CellIdsToIntervals(const std::vector<S2CellId>& exactSet,
-                          const std::vector<S2CellId>& intervalSet,
+void S2CellIdsToIntervalsWithParents(const std::vector<S2CellId>& intervalSet,
                           const S2IndexingParams& indexParams,
                           OrderedIntervalList* oilOut) {
-    std::vector<mongo::Interval>& intervals = oilOut->intervals;
+    // There may be duplicates when going up parent cells if two cells share a parent
+    std::unordered_set<S2CellId> exactSet;
+    for (const S2CellId& interval: intervalSet) {
+        S2CellId coveredCell = interval;
+        // Look at the cells that cover us.  We want to look at every cell that contains the
+        // covering we would index on if we were to insert the query geometry.  We generate
+        // the would-index-with-this-covering and find all the cells strictly containing the
+        // cells in that set, until we hit the coarsest indexed cell.  We use equality, not
+        // a prefix match.  Why not prefix?  Because we've already looked at everything
+        // finer or as fine as our initial covering.
+        //
+        // Say we have a fine point with cell id 212121, we go up one, get 21212, we don't
+        // want to look at cells 21212[not-1] because we know they're not going to intersect
+        // with 212121, but entries inserted with cell value 21212 (no trailing digits) may.
+        // And we've already looked at points with the cell id 211111 from the regex search
+        // created above, so we only want things where the value of the last digit is not
+        // stored (and therefore could be 1).
+
+        while (coveredCell.level() > indexParams.coarsestIndexedLevel) {
+            // Add the parent cell of the currently covered cell since we aren't at the
+            // coarsest level yet
+            // NOTE: Be careful not to generate cells strictly less than the
+            // coarsestIndexedLevel - this can result in S2 failures when level < 0.
+
+            coveredCell = coveredCell.parent();
+            exactSet.insert(coveredCell);
+        }
+    }
     for (const S2CellId& exact : exactSet) {
         BSONObjBuilder b;
         if (indexParams.indexVersion < S2_INDEX_VERSION_3) {
@@ -125,10 +150,10 @@ void S2CellIdsToIntervals(const std::vector<S2CellId>& exactSet,
         } else {
             b.append("", S2CellIdToIndexKey(exact));
         }
-        intervals.push_back(IndexBoundsBuilder::makePointInterval(b.obj()));
+        oilOut->intervals.push_back(IndexBoundsBuilder::makePointInterval(b.obj()));
     }
 
     S2CellIdsToIntervalsUnsorted(intervalSet, indexParams, oilOut);
-    std::sort(intervals.begin(), intervals.end(), compareIntervals);
+    std::sort(oilOut->intervals.begin(), oilOut->intervals.end(), compareIntervals);
 }
 }

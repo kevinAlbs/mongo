@@ -113,40 +113,8 @@ void ExpressionMapping::cover2dsphere(const S2Region& region,
     // Look at the cells we cover and all cells that are within our covering and finer.
     // Anything with our cover as a strict prefix is contained within the cover and should
     // be intersection tested.
-    std::vector<S2CellId> intervalSet;
-    // There may be duplicates when going up parent cells if two cells share a parent
-    std::unordered_set<S2CellId> exactUnique;
-    for (size_t i = 0; i < cover.size(); ++i) {
-        S2CellId coveredCell = cover[i];
 
-        intervalSet.push_back(coveredCell);
-
-        // Look at the cells that cover us.  We want to look at every cell that contains the
-        // covering we would index on if we were to insert the query geometry.  We generate
-        // the would-index-with-this-covering and find all the cells strictly containing the
-        // cells in that set, until we hit the coarsest indexed cell.  We use equality, not
-        // a prefix match.  Why not prefix?  Because we've already looked at everything
-        // finer or as fine as our initial covering.
-        //
-        // Say we have a fine point with cell id 212121, we go up one, get 21212, we don't
-        // want to look at cells 21212[not-1] because we know they're not going to intersect
-        // with 212121, but entries inserted with cell value 21212 (no trailing digits) may.
-        // And we've already looked at points with the cell id 211111 from the regex search
-        // created above, so we only want things where the value of the last digit is not
-        // stored (and therefore could be 1).
-
-        while (coveredCell.level() > coarsestIndexedLevel) {
-            // Add the parent cell of the currently covered cell since we aren't at the
-            // coarsest level yet
-            // NOTE: Be careful not to generate cells strictly less than the
-            // coarsestIndexedLevel - this can result in S2 failures when level < 0.
-
-            coveredCell = coveredCell.parent();
-            exactUnique.insert(coveredCell);
-        }
-    }
-    std::vector<S2CellId> exactSet(exactUnique.begin(), exactUnique.end());
-    S2CellIdsToIntervals(exactSet, intervalSet, indexingParams, oilOut);
+    S2CellIdsToIntervalsWithParents(cover, indexingParams, oilOut);
 
     // Make sure that our intervals don't overlap each other and are ordered correctly.
     // This perhaps should only be done in debug mode.
