@@ -48,6 +48,6 @@ void S2CellIdsToIntervals(const std::vector<S2CellId>& intervalSet,
 // Creates an ordered interval list from range intervals and
 // traverses cell parents for exact intervals up to coarsestIndexedLevel
 void S2CellIdsToIntervalsWithParents(const std::vector<S2CellId>& interval,
-                          const S2IndexingParams& indexParams,
-                          OrderedIntervalList* out);
+                                     const S2IndexingParams& indexParams,
+                                     OrderedIntervalList* out);
 }

@@ -41,11 +41,11 @@
 #include "mongo/db/geo/geoconstants.h"
 #include "mongo/db/geo/geoparser.h"
 #include "mongo/db/geo/hash.h"
-#include "mongo/db/geo/s2_keys.h"
 #include "mongo/db/matcher/expression.h"
 #include "mongo/db/query/expression_index.h"
 #include "mongo/db/query/expression_index_knobs.h"
 #include "mongo/db/index/expression_params.h"
+#include "mongo/db/index/s2_keys.h"
 #include "mongo/util/log.h"
 
 #include <algorithm>
@@ -1014,8 +1014,6 @@ void GeoNear2DSphereStage::DensityEstimator::buildIndexScan(OperationContext* tx
     centerId.AppendVertexNeighbors(_currentLevel, &neighbors);
 
     S2CellIdsToIntervals(neighbors, _indexParams, coveredIntervals);
-
-    invariant(coveredIntervals->isValidFor(1));
 
     // Index scan
     _indexScan.reset(new IndexScan(txn, scanParams, workingSet, NULL));

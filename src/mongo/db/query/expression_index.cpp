@@ -35,10 +35,10 @@
 #include "mongo/db/geo/geoconstants.h"
 #include "mongo/db/geo/hash.h"
 #include "mongo/db/geo/r2_region_coverer.h"
-#include "mongo/db/geo/s2_keys.h"
 #include "mongo/db/hasher.h"
-#include "mongo/db/index/s2_indexing_params.h"
 #include "mongo/db/index/expression_params.h"
+#include "mongo/db/index/s2_indexing_params.h"
+#include "mongo/db/index/s2_keys.h"
 
 namespace mongo {
 
@@ -115,13 +115,6 @@ void ExpressionMapping::cover2dsphere(const S2Region& region,
     // be intersection tested.
 
     S2CellIdsToIntervalsWithParents(cover, indexingParams, oilOut);
-
-    // Make sure that our intervals don't overlap each other and are ordered correctly.
-    // This perhaps should only be done in debug mode.
-    if (!oilOut->isValidFor(1)) {
-        cout << "check your assumptions! OIL = " << oilOut->toString() << std::endl;
-        verify(0);
-    }
 }
 
 }  // namespace mongo

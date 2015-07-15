@@ -68,6 +68,7 @@ S2CellId S2CellIdFromIndexKey(long long indexKey) {
 void S2CellIdToIndexRange(const S2CellId& cellId, long long* start, long long* end) {
     *start = S2CellIdToIndexKey(cellId.range_min());
     *end = S2CellIdToIndexKey(cellId.range_max());
+    invariant(*start <= *end);
 }
 
 namespace {
@@ -76,9 +77,8 @@ bool compareIntervals(const Interval& a, const Interval& b) {
 }
 
 void S2CellIdsToIntervalsUnsorted(const std::vector<S2CellId>& intervalSet,
-                          const S2IndexingParams& indexParams,
-                          OrderedIntervalList* oilOut) {
-
+                                  const S2IndexingParams& indexParams,
+                                  OrderedIntervalList* oilOut) {
     for (const S2CellId& interval : intervalSet) {
         BSONObjBuilder b;
         if (indexParams.indexVersion < S2_INDEX_VERSION_3) {
@@ -88,7 +88,8 @@ void S2CellIdsToIntervalsUnsorted(const std::vector<S2CellId>& intervalSet,
             end[start.size() - 1]++;
             b.append("start", start);
             b.append("end", end);
-            oilOut->intervals.push_back(IndexBoundsBuilder::makeRangeInterval(b.obj(), true, false));
+            oilOut->intervals.push_back(
+                IndexBoundsBuilder::makeRangeInterval(b.obj(), true, false));
         } else {
             long long start, end;
             S2CellIdToIndexRange(interval, &start, &end);
@@ -109,14 +110,20 @@ void S2CellIdsToIntervals(const std::vector<S2CellId>& intervalSet,
     // intervals are made
     S2CellIdsToIntervalsUnsorted(intervalSet, indexParams, oilOut);
     std::sort(oilOut->intervals.begin(), oilOut->intervals.end(), compareIntervals);
+    // Make sure that our intervals don't overlap each other and are ordered correctly.
+    // This perhaps should only be done in debug mode.
+    if (!oilOut->isValidFor(1)) {
+        cout << "check your assumptions! OIL = " << oilOut->toString() << std::endl;
+        verify(0);
+    }
 }
 
 void S2CellIdsToIntervalsWithParents(const std::vector<S2CellId>& intervalSet,
-                          const S2IndexingParams& indexParams,
-                          OrderedIntervalList* oilOut) {
+                                     const S2IndexingParams& indexParams,
+                                     OrderedIntervalList* oilOut) {
     // There may be duplicates when going up parent cells if two cells share a parent
     std::unordered_set<S2CellId> exactSet;
-    for (const S2CellId& interval: intervalSet) {
+    for (const S2CellId& interval : intervalSet) {
         S2CellId coveredCell = interval;
         // Look at the cells that cover us.  We want to look at every cell that contains the
         // covering we would index on if we were to insert the query geometry.  We generate
@@ -155,5 +162,11 @@ void S2CellIdsToIntervalsWithParents(const std::vector<S2CellId>& intervalSet,
 
     S2CellIdsToIntervalsUnsorted(intervalSet, indexParams, oilOut);
     std::sort(oilOut->intervals.begin(), oilOut->intervals.end(), compareIntervals);
+    // Make sure that our intervals don't overlap each other and are ordered correctly.
+    // This perhaps should only be done in debug mode.
+    if (!oilOut->isValidFor(1)) {
+        cout << "check your assumptions! OIL = " << oilOut->toString() << std::endl;
+        verify(0);
+    }
 }
 }
