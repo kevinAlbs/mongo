@@ -134,14 +134,17 @@ void ExpressionParams::parse2dsphereParams(const BSONObj& infoObj, S2IndexingPar
 
 
     static const std::string kIndexVersionFieldName("2dsphereIndexVersion");
+    static const std::string kFinestIndexedLevel("finestIndexedLevel");
+    static const std::string kCoarsestIndexedLevel("coarsestIndexedLevel");
+
     long long finestIndexedLevel, coarsestIndexedLevel, indexVersion;
 
     bsonExtractIntegerFieldWithDefault(infoObj,
-                                       "finestIndexedLevel",
+                                       kFinestIndexedLevel,
                                        S2::kAvgEdge.GetClosestLevel(500.0 / out->radius),
                                        &finestIndexedLevel);
     bsonExtractIntegerFieldWithDefault(infoObj,
-                                       "coarsestIndexedLevel",
+                                       kCoarsestIndexedLevel,
                                        S2::kAvgEdge.GetClosestLevel(100 * 1000.0 / out->radius),
                                        &coarsestIndexedLevel);
 
