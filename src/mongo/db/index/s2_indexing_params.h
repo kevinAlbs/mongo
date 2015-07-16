@@ -30,8 +30,7 @@
 
 #include "mongo/db/geo/s2.h"
 #include "mongo/db/jsobj.h"
-
-class S2RegionCoverer;
+#include "third_party/s2/s2regioncoverer.h"
 
 namespace mongo {
 
