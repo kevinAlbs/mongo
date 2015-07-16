@@ -27,6 +27,7 @@
  */
 
 #include "mongo/db/index/s2_indexing_params.h"
+#include "third_party/s2/s2regioncoverer.h"
 
 namespace mongo {
 

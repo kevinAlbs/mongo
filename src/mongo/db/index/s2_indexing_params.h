@@ -29,7 +29,8 @@
 #pragma once
 
 #include "mongo/db/geo/s2.h"
-#include "third_party/s2/s2regioncoverer.h"
+
+class S2RegionCoverer;
 
 namespace mongo {
 
