@@ -445,8 +445,8 @@ void ExpressionKeysPrivate::getS2Keys(const BSONObj& obj,
 
         BSONObjSet keysForThisField;
         if (IndexNames::GEO_2DSPHERE == e.valuestr()) {
-            if (S2_INDEX_VERSION_2 == params.indexVersion) {
-                // For V2,
+            if (params.indexVersion >= S2_INDEX_VERSION_2) {
+                // For >= V2,
                 // geo: null,
                 // geo: undefined
                 // geo: []
@@ -466,7 +466,7 @@ void ExpressionKeysPrivate::getS2Keys(const BSONObj& obj,
                     }
                 }
 
-                // V2 2dsphere indices require that at least one geo field to be present in a
+                // >= V2 2dsphere indices require that at least one geo field to be present in a
                 // document in order to index it.
                 if (fieldElements.size() > 0) {
                     haveGeoField = true;
@@ -504,8 +504,8 @@ void ExpressionKeysPrivate::getS2Keys(const BSONObj& obj,
         keysToAdd = updatedKeysToAdd;
     }
 
-    // Make sure that if we're V2 there's at least one geo field present in the doc.
-    if (S2_INDEX_VERSION_2 == params.indexVersion) {
+    // Make sure that if we're >= V2 there's at least one geo field present in the doc.
+    if (params.indexVersion >= S2_INDEX_VERSION_2) {
         if (!haveGeoField) {
             return;
         }
