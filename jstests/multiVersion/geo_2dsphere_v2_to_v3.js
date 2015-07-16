@@ -73,11 +73,8 @@ function get2dsphereIndexVersion(coll) {
 var mongod = MongoRunner.runMongod({binVersion: "3.0"});
 var coll = getCollection(mongod);
 var res = coll.insert(generatePoints(10));
-assert.writeOK(res);
 res = coll.insert(generatePolygons(10));
-assert.writeOK(res);
 res = coll.createIndex({geometry: "2dsphere"}, {"2dsphereIndexVersion": 2});
-assert.commandWorked(res);
 assert.eq(2, get2dsphereIndexVersion(coll));
 res = coll.find(near());
 assert.eq(res.itcount(), 20);
@@ -93,7 +90,6 @@ assert.eq(res.itcount(), 20);
 // reindex to version 3
 coll.dropIndex({geometry: "2dsphere"});
 res = coll.createIndex({geometry: "2dsphere"}, {"2dsphereIndexVersion": 3});
-assert.commandWorked(res);
 assert.eq(3, get2dsphereIndexVersion(coll));
 res = coll.find(near());
 assert.eq(res.itcount(), 20);
@@ -108,9 +104,7 @@ mongod = MongoRunner.runMongod({binVersion: "latest", restart: mongod})
 coll = getCollection(mongod);
 assert.eq(3, get2dsphereIndexVersion(coll));
 res = coll.dropIndex({geometry: "2dsphere"});
-assert.commandWorked(res);
 res = coll.createIndex({geometry: "2dsphere"}, {"2dsphereIndexVersion": 2});
-assert.commandWorked(res);
 assert.eq(2, get2dsphereIndexVersion(coll));
 MongoRunner.stopMongod(mongod);
 mongod = MongoRunner.runMongod({binVersion: "3.0", restart: mongod});
