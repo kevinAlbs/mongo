@@ -11,6 +11,7 @@ function generatePoint() {
     };
     return pt;
 }
+
 // Generates random points in lat/lon square
 // of size 10x10 centered at [0,0]
 function generatePoints(amount) {
@@ -29,7 +30,7 @@ function generatePolygons(amount) {
         var coordinates = [];
         for (var j = 0; j < numpoints-1; j++) {
             var angle = (j/numpoints) * 2 * Math.PI;
-            coordinates.push([dist * Math.cos(angle), dist * Math.sin(angle)])
+            coordinates.push([dist * Math.cos(angle), dist * Math.sin(angle)]);
         }
         coordinates.push(coordinates[0]);
         polygons.push({
@@ -42,13 +43,13 @@ function generatePolygons(amount) {
     return polygons;
 }
 
-function near(pt) {
+function near() {
     return {
         geometry: {
             $near : {
                 $geometry : {
                     type: "Point",
-                    coordinates: pt
+                    coordinates: [0,0]
                 }
             }
         }
@@ -59,7 +60,7 @@ function getCollection(conn) {
     return conn.getDB("test").twoDSphereVersion;
 }
 
-function getVersion(coll) {
+function get2dsphereIndexVersion(coll) {
     var indexes = coll.getIndexes();
     for (var i = 0; i < indexes.length; i++) {
         if (indexes[i].name == "geometry_2dsphere") {
@@ -77,24 +78,24 @@ res = coll.insert(generatePolygons(10));
 assert.writeOK(res);
 res = coll.createIndex({geometry: "2dsphere"}, {"2dsphereIndexVersion": 2});
 assert.commandWorked(res);
-assert.eq(2, getVersion(coll));
-res = coll.find(near([0,0]))
+assert.eq(2, get2dsphereIndexVersion(coll));
+res = coll.find(near());
 assert.eq(res.itcount(), 20);
 
 // Version 2 index should still work fine in latest
 MongoRunner.stopMongod(mongod);
-mongod = MongoRunner.runMongod({binVersion: "latest", restart: mongod})
+mongod = MongoRunner.runMongod({binVersion: "latest", restart: mongod});
 coll = getCollection(mongod);
-assert.eq(2, getVersion(coll));
-res = coll.find(near([0,0]))
+assert.eq(2, get2dsphereIndexVersion(coll));
+res = coll.find(near());
 assert.eq(res.itcount(), 20);
 
 // reindex to version 3
 coll.dropIndex({geometry: "2dsphere"});
 res = coll.createIndex({geometry: "2dsphere"}, {"2dsphereIndexVersion": 3});
 assert.commandWorked(res);
-assert.eq(3, getVersion(coll));
-res = coll.find(near([0,0]))
+assert.eq(3, get2dsphereIndexVersion(coll));
+res = coll.find(near());
 assert.eq(res.itcount(), 20);
 
 // downgrading shouldn't be able to startup because of assertion error
@@ -105,16 +106,16 @@ assert.eq(failed_mongod, null);
 // upgrade, reindex, then downgrade to fix
 mongod = MongoRunner.runMongod({binVersion: "latest", restart: mongod})
 coll = getCollection(mongod);
-assert.eq(3, getVersion(coll));
+assert.eq(3, get2dsphereIndexVersion(coll));
 res = coll.dropIndex({geometry: "2dsphere"});
 assert.commandWorked(res);
 res = coll.createIndex({geometry: "2dsphere"}, {"2dsphereIndexVersion": 2});
 assert.commandWorked(res);
-assert.eq(2, getVersion(coll));
+assert.eq(2, get2dsphereIndexVersion(coll));
 MongoRunner.stopMongod(mongod);
 mongod = MongoRunner.runMongod({binVersion: "3.0", restart: mongod});
 assert.neq(mongod, null);
 coll = getCollection(mongod);
-assert.eq(2, getVersion(coll));
-res = coll.find(near([0,0]));
+assert.eq(2, get2dsphereIndexVersion(coll));
+res = coll.find(near());
 assert.eq(res.itcount(), 20);
