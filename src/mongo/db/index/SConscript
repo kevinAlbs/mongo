@@ -37,6 +37,7 @@ env.Library(
         ],
         LIBDEPS=[
             'key_generator',
+            'expression_params',
             '$BUILD_DIR/mongo/bson/bson',
         ],
 )

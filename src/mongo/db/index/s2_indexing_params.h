@@ -35,9 +35,6 @@ namespace mongo {
 
 class GeometryContainer;
 
-// Points will only be indexed at this level
-const int kPointIndexedLevel = S2::kMaxCellLevel;
-
 // An enum describing the version of an S2 index.
 enum S2IndexVersion {
     // The first version of the S2 index, introduced in MongoDB 2.4.0.  Compatible with MongoDB

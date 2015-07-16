@@ -32,6 +32,9 @@
 
 namespace mongo {
 
+// Points will only be indexed at this level
+const int kPointIndexedLevel = S2::kMaxCellLevel;
+
 std::string S2IndexingParams::toString() const {
     std::stringstream ss;
     ss << "maxKeysPerInsert: " << maxKeysPerInsert << std::endl;
