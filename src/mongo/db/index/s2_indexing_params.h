@@ -29,7 +29,6 @@
 #pragma once
 
 #include "mongo/db/geo/s2.h"
-#include "mongo/db/jsobj.h"
 #include "third_party/s2/s2regioncoverer.h"
 
 namespace mongo {
