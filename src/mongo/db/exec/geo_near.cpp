@@ -977,6 +977,22 @@ S2Region* buildS2Region(const SearchInterval& searchInterval) {
     }
     return nullptr;
 }
+
+class RegionBuffer: public S2Region {
+public:
+    RegionBuffer(GeometryContainer& geoContainer) : _geoContainer(geoContainer) {}
+    S2Cap GetCapBound() {
+        S2Region& region = _geoContainer.getS2Region();
+        S2Cap initialBound = region.GetCapBound();
+        S1Angle distance = S1Angle::Radians(initialBound.angle().radians() + bufferDistance);
+        return S2Cap::FromAxisAngle(initialBound.axis(), distance);
+    }
+
+private:
+    GeometryContainer& _geoContainer;
+    double bufferDistance; // in radians
+};
+
 }
 
 StatusWith<NearStage::CoveredInterval*>  //
