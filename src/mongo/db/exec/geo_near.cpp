@@ -995,7 +995,16 @@ public:
         cellCentroid.point = cellCap.axis();
         cellCentroid.crs = SPHERE;
         return _geoContainer.minDistance(cellCentroid) <
-                _bufferDistance + cellCap.angle().radians();;
+                _bufferDistance + cellCap.angle().radians();
+    }
+
+    bool Contains(S2Cell const& cell) const {
+        S2Cap cellCap = cell.GetCapBound();
+        PointWithCRS cellCentroid;
+        cellCentroid.point = cellCap.axis();
+        cellCentroid.crs = SPHERE;
+        return _geoContainer.minDistance(cellCentroid) <
+                _bufferDistance - cellCap.angle().radians();
     }
 
 private:

@@ -33,3 +33,11 @@ env.CppUnitTest("r2_region_coverer_test", [ "r2_region_coverer_test.cpp" ],
 env.CppUnitTest("big_polygon_test", [ "big_polygon_test.cpp" ],
                 LIBDEPS = [ "geometry",
                             "$BUILD_DIR/mongo/db/common" ]) # db/common needed for field parsing
+
+env.CppUnitTest("line_covering_test", [ "line_covering_test.cpp" ],
+                 LIBDEPS = [ "geometry",
+                             "geoparser",
+                             "$BUILD_DIR/third_party/s2/s2",
+                             "$BUILD_DIR/mongo/bson/bson",
+                             "$BUILD_DIR/mongo/db/common"
+                             ])
