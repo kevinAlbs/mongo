@@ -64,6 +64,7 @@ public:
      * Whether this geometry is a point
      */
     bool isPoint() const;
+    const PointWithCRS& getPointWithCRS() const;
 
     /**
      * Reports the CRS of the contained geometry.

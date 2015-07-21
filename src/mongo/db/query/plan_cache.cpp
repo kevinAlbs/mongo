@@ -228,7 +228,7 @@ void encodeGeoNearMatchExpression(const GeoNearMatchExpression* tree, StringBuil
     *keyBuilder << (nearQuery.isNearSphere ? "ns" : "nr");
 
     // CRS (flat or spherical or strict-winding spherical)
-    switch (nearQuery.centroid->crs) {
+    switch (nearQuery.geoContainer->getNativeCRS()) {
         case FLAT:
             *keyBuilder << "fl";
             break;
@@ -239,7 +239,7 @@ void encodeGeoNearMatchExpression(const GeoNearMatchExpression* tree, StringBuil
             *keyBuilder << "ss";
             break;
         case UNSET:
-            error() << "unknown CRS type " << (int)nearQuery.centroid->crs
+            error() << "unknown CRS type " << (int)nearQuery.geoContainer->getNativeCRS()
                     << " in point geometry for near query";
             invariant(false);
             break;

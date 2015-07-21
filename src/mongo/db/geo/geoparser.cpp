@@ -755,7 +755,10 @@ GeoParser::GeoSpecifier GeoParser::parseGeoSpecifier(const BSONElement& type) {
         return GeoParser::POLYGON;
     } else if (mongoutils::str::equals(fieldName, "$centerSphere")) {
         return GeoParser::CENTER_SPHERE;
-    } else if (mongoutils::str::equals(fieldName, "$geometry")) {
+    } else if (mongoutils::str::equals(fieldName, "$geometry") ||
+               mongoutils::str::equals(fieldName, "$near") ||
+               mongoutils::str::equals(fieldName, "$nearSphere") ||
+               mongoutils::str::equals(fieldName, "$geoNear")) {
         return GeoParser::GEOMETRY;
     }
     return GeoParser::UNKNOWN;

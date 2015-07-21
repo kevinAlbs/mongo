@@ -46,6 +46,10 @@ bool GeometryContainer::isPoint() const {
     return nullptr != _point;
 }
 
+const PointWithCRS& GeometryContainer::getPointWithCRS() const {
+    return *_point;
+}
+
 bool GeometryContainer::supportsContains() const {
     return NULL != _polygon || NULL != _box || NULL != _cap || NULL != _multiPolygon ||
         (NULL != _geometryCollection && (_geometryCollection->polygons.vector().size() > 0 ||

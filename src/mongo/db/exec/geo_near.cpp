@@ -138,12 +138,12 @@ static StatusWith<double> computeGeoNearDistance(const GeoNearParams& nearParams
 
     // Must have an object in order to get geometry out of it.
     invariant(member->hasObj());
-
-    CRS queryCRS = nearParams.nearQuery->centroid->crs;
+    const GeometryContainer& geoContainer = *nearParams.nearQuery->geoContainer;
+    CRS queryCRS = nearParams.nearQuery->geoContainer->getNativeCRS();
 
     // Extract all the geometries out of this document for the near query
     OwnedPointerVector<StoredGeometry> geometriesOwned;
-    vector<StoredGeometry*>& geometries = geometriesOwned.mutableVector();
+    std::vector<StoredGeometry*>& geometries = geometriesOwned.mutableVector();
     extractGeometries(member->obj.value(), nearParams.nearQuery->field, &geometries);
 
     // Compute the minimum distance of all the geometries in the document
@@ -164,7 +164,16 @@ static StatusWith<double> computeGeoNearDistance(const GeoNearParams& nearParams
             continue;
         stored.geometry.projectInto(queryCRS);
 
-        double nextDistance = stored.geometry.minDistance(*nearParams.nearQuery->centroid);
+        double nextDistance = std::numeric_limits<double>::max();
+        if (geoContainer.isPoint()) {
+            nextDistance = stored.geometry.minDistance(geoContainer.getPointWithCRS());
+        }
+        else {
+            if (!stored.geometry.isPoint()) {
+                return StatusWith<double>(-1);
+            }
+            nextDistance = geoContainer.minDistance(stored.geometry.getPointWithCRS());
+        }
 
         if (minDistance < 0 || nextDistance < minDistance) {
             minDistance = nextDistance;
@@ -195,11 +204,34 @@ static StatusWith<double> computeGeoNearDistance(const GeoNearParams& nearParams
     return StatusWith<double>(minDistance);
 }
 
-static R2Annulus geoNearDistanceBounds(const GeoNearExpression& query) {
-    const CRS queryCRS = query.centroid->crs;
+static SearchInterval geoNear2dsphereDistanceBounds(const GeoNearExpression& query) {
+    invariant(SPHERE == query.geoContainer->getNativeCRS());
+
+    // TODO: Tighten this up a bit by making a CRS for "sphere with radians"
+    double minDistance = query.minDistance;
+    double maxDistance = query.maxDistance;
+
+    if (query.unitsAreRadians) {
+        // Our input bounds are in radians, convert to meters since the query CRS is actually
+        // SPHERE.  We'll convert back to radians on outputting distances.
+        minDistance *= kRadiusOfEarthInMeters;
+        maxDistance *= kRadiusOfEarthInMeters;
+    }
+
+    // TODO: Wrapping behavior should not depend on the index, which would make $near code
+    // insensitive to which direction we explore the index in.
+    return SearchInterval(*query.geoContainer,
+                          min(minDistance, kMaxEarthDistanceInMeters),
+                          min(maxDistance, kMaxEarthDistanceInMeters));
+}
+
+static R2Annulus geoNear2dDistanceBounds(const GeoNearExpression& query) {
+    invariant(query.geoContainer->isPoint());
+    PointWithCRS centroid = query.geoContainer->getPointWithCRS();
+    const CRS queryCRS = centroid.crs;
 
     if (FLAT == queryCRS) {
-        return R2Annulus(query.centroid->oldPoint, query.minDistance, query.maxDistance);
+        return R2Annulus(centroid.oldPoint, query.minDistance, query.maxDistance);
     }
 
     invariant(SPHERE == queryCRS);
@@ -221,7 +253,7 @@ static R2Annulus geoNearDistanceBounds(const GeoNearExpression& query) {
     // place.
     // TODO: Wrapping behavior should not depend on the index, which would make $near code
     // insensitive to which direction we explore the index in.
-    return R2Annulus(query.centroid->oldPoint,
+    return R2Annulus(centroid.oldPoint,
                      min(minDistance, kMaxEarthDistanceInMeters),
                      min(maxDistance, kMaxEarthDistanceInMeters));
 }
@@ -232,8 +264,8 @@ static R2Annulus geoNearDistanceBounds(const GeoNearExpression& query) {
 
 static R2Annulus twoDDistanceBounds(const GeoNearParams& nearParams,
                                     const IndexDescriptor* twoDIndex) {
-    R2Annulus fullBounds = geoNearDistanceBounds(*nearParams.nearQuery);
-    const CRS queryCRS = nearParams.nearQuery->centroid->crs;
+    R2Annulus fullBounds = geoNear2dDistanceBounds(*nearParams.nearQuery);
+    const CRS queryCRS = nearParams.nearQuery->geoContainer->getNativeCRS();
 
     if (FLAT == queryCRS) {
         // Reset the full bounds based on our index bounds
@@ -270,7 +302,8 @@ public:
         invariant(status.isOK());
 
         _converter.reset(new GeoHashConverter(hashParams));
-        _centroidCell = _converter->hash(_nearParams->nearQuery->centroid->oldPoint);
+        _centroidCell = _converter->hash(
+                _nearParams->nearQuery->geoContainer->getPointWithCRS().oldPoint);
 
         // Since appendVertexNeighbors(level, output) requires level < hash.getBits(),
         // we have to start to find documents at most GeoHash::kMaxBits - 1. Thus the finest
@@ -402,7 +435,7 @@ PlanStage::StageState GeoNear2DStage::initialize(OperationContext* txn,
         // STRICT_SPHERE is impossible here, as GeoJSON centroid is not allowed for 2d index.
 
         // Estimator finished its work, we need to finish initialization too.
-        if (SPHERE == _nearParams.nearQuery->centroid->crs) {
+        if (SPHERE == _nearParams.nearQuery->geoContainer->getNativeCRS()) {
             // Estimated distance is in degrees, convert it to meters.
             _boundsIncrement = deg2rad(estimatedDistance) * kRadiusOfEarthInMeters * 3;
             // Limit boundsIncrement to ~20KM, so that the first circle won't be too aggressive.
@@ -527,7 +560,7 @@ static double min2DBoundsIncrement(const GeoNearExpression& query, IndexDescript
     // max radius.  This is slightly conservative for now (box diagonal vs circle radius).
     double minBoundsIncrement = hasher.getError() / 2;
 
-    const CRS queryCRS = query.centroid->crs;
+    const CRS queryCRS = query.geoContainer->getNativeCRS();
     if (FLAT == queryCRS)
         return minBoundsIncrement;
 
@@ -584,7 +617,7 @@ StatusWith<NearStage::CoveredInterval*>  //
     // Get a covering region for this interval
     //
 
-    const CRS queryCRS = _nearParams.nearQuery->centroid->crs;
+    const CRS queryCRS = _nearParams.nearQuery->geoContainer->getNativeCRS();
 
     unique_ptr<R2Region> coverRegion;
 
@@ -738,8 +771,8 @@ GeoNear2DSphereStage::GeoNear2DSphereStage(const GeoNearParams& nearParams,
     : NearStage(txn, kS2IndexNearStage.c_str(), STAGE_GEO_NEAR_2DSPHERE, workingSet, collection),
       _nearParams(nearParams),
       _s2Index(s2Index),
-      _fullBounds(geoNearDistanceBounds(*nearParams.nearQuery)),
-      _currBounds(_fullBounds.center(), -1, _fullBounds.getInner()),
+      _fullBounds(geoNear2dsphereDistanceBounds(*nearParams.nearQuery)),
+      _currBounds(_fullBounds.geoContainer(), -1, _fullBounds.getInner()),
       _boundsIncrement(0.0) {
     _specificStats.keyPattern = s2Index->keyPattern();
     _specificStats.indexName = s2Index->indexName();
@@ -747,47 +780,6 @@ GeoNear2DSphereStage::GeoNear2DSphereStage(const GeoNearParams& nearParams,
 }
 
 GeoNear2DSphereStage::~GeoNear2DSphereStage() {}
-
-namespace {
-
-S2Region* buildS2Region(const R2Annulus& sphereBounds) {
-    // Internal bounds come in SPHERE CRS units
-    // i.e. center is lon/lat, inner/outer are in meters
-    S2LatLng latLng = S2LatLng::FromDegrees(sphereBounds.center().y, sphereBounds.center().x);
-
-    vector<S2Region*> regions;
-
-    const double inner = sphereBounds.getInner();
-    const double outer = sphereBounds.getOuter();
-
-    if (inner > 0) {
-        // TODO: Currently a workaround to fix occasional floating point errors
-        // in S2, where sometimes points near the axis will not be returned
-        // if inner == 0
-        S2Cap innerCap = S2Cap::FromAxisAngle(latLng.ToPoint(),
-                                              S1Angle::Radians(inner / kRadiusOfEarthInMeters));
-        innerCap = innerCap.Complement();
-        regions.push_back(new S2Cap(innerCap));
-    }
-
-    // We only need to max bound if this is not a full search of the Earth
-    // Using the constant here is important since we use the min of kMaxEarthDistance
-    // and the actual bounds passed in to set up the search area.
-    if (outer < kMaxEarthDistanceInMeters) {
-        S2Cap outerCap = S2Cap::FromAxisAngle(latLng.ToPoint(),
-                                              S1Angle::Radians(outer / kRadiusOfEarthInMeters));
-        regions.push_back(new S2Cap(outerCap));
-    }
-
-    // if annulus is entire world, return a full cap
-    if (regions.empty()) {
-        regions.push_back(new S2Cap(S2Cap::Full()));
-    }
-
-    // Takes ownership of caps
-    return new S2RegionIntersection(&regions);
-}
-}
 
 // Estimate the density of data by search the nearest cells level by level around center.
 class GeoNear2DSphereStage::DensityEstimator {
@@ -844,7 +836,15 @@ void GeoNear2DSphereStage::DensityEstimator::buildIndexScan(OperationContext* tx
     coveredIntervals->intervals.clear();
 
     // Find 4 neighbors (3 neighbors at face vertex) at current level.
-    const S2CellId& centerId = _nearParams->nearQuery->centroid->cell.id();
+    S2CellId centerId = S2CellId::Sentinel();
+    const GeometryContainer& geoContainer = *_nearParams->nearQuery->geoContainer;
+    if (geoContainer.isPoint()) {
+        centerId = S2CellId::FromPoint(geoContainer.getPointWithCRS().point);
+    }
+    else {
+        S2Point centroid = geoContainer.getS2Region().GetCapBound().axis();
+        centerId = S2CellId::FromPoint(centroid);
+    }
     vector<S2CellId> neighbors;
 
     // The search area expands 4X each time.
@@ -934,6 +934,51 @@ PlanStage::StageState GeoNear2DSphereStage::initialize(OperationContext* txn,
     return state;
 }
 
+namespace {
+
+
+S2Region* buildS2PointRegion(const S2Point& point, double inner, double outer) {
+    vector<S2Region*> regions;
+
+    if (inner > 0) {
+        // TODO: Currently a workaround to fix occasional floating point errors
+        // in S2, where sometimes points near the axis will not be returned
+        // if inner == 0
+        S2Cap innerCap = S2Cap::FromAxisAngle(point,
+                                              S1Angle::Radians(inner / kRadiusOfEarthInMeters));
+        innerCap = innerCap.Complement();
+        regions.push_back(new S2Cap(innerCap));
+    }
+
+    // We only need to max bound if this is not a full search of the Earth
+    // Using the constant here is important since we use the min of kMaxEarthDistance
+    // and the actual bounds passed in to set up the search area.
+    if (outer < kMaxEarthDistanceInMeters) {
+        S2Cap outerCap = S2Cap::FromAxisAngle(point,
+                                              S1Angle::Radians(outer / kRadiusOfEarthInMeters));
+        regions.push_back(new S2Cap(outerCap));
+    }
+
+    // if annulus is entire world, return a full cap
+    if (regions.empty()) {
+        regions.push_back(new S2Cap(S2Cap::Full()));
+    }
+
+    // Takes ownership of caps
+    return new S2RegionIntersection(&regions);
+}
+
+S2Region* buildS2Region(const SearchInterval& searchInterval) {
+    const GeometryContainer& geoContainer = searchInterval.geoContainer();
+    if (geoContainer.isPoint()) {
+        return buildS2PointRegion(geoContainer.getPointWithCRS().point,
+                                  searchInterval.getInner(),
+                                  searchInterval.getOuter());
+    }
+    return nullptr;
+}
+}
+
 StatusWith<NearStage::CoveredInterval*>  //
     GeoNear2DSphereStage::nextInterval(OperationContext* txn,
                                        WorkingSet* workingSet,
@@ -959,12 +1004,9 @@ StatusWith<NearStage::CoveredInterval*>  //
 
     invariant(_boundsIncrement > 0.0);
 
-    R2Annulus nextBounds(_currBounds.center(),
-                         _currBounds.getOuter(),
-                         min(_currBounds.getOuter() + _boundsIncrement, _fullBounds.getOuter()));
-
-    bool isLastInterval = (nextBounds.getOuter() == _fullBounds.getOuter());
-    _currBounds = nextBounds;
+    _currBounds.setInner(_currBounds.getOuter());
+    _currBounds.setOuter(min(_currBounds.getOuter() + _boundsIncrement, _fullBounds.getOuter()));
+    bool isLastInterval = (_currBounds.getOuter() == _fullBounds.getOuter());
 
     //
     // Setup the covering region and stages for this interval
@@ -1012,8 +1054,8 @@ StatusWith<NearStage::CoveredInterval*>  //
 
     return StatusWith<CoveredInterval*>(new CoveredInterval(_children.back().get(),
                                                             true,
-                                                            nextBounds.getInner(),
-                                                            nextBounds.getOuter(),
+                                                            _currBounds.getInner(),
+                                                            _currBounds.getOuter(),
                                                             isLastInterval));
 }
 

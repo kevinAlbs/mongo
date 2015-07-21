@@ -124,8 +124,8 @@ public:
     // The name of the field that contains the geometry.
     std::string field;
 
-    // The starting point of the near search. Use forward declaration of geometries.
-    std::unique_ptr<PointWithCRS> centroid;
+    // The starting geometry of the near search. Use forward declaration of geometries.
+    std::unique_ptr<GeometryContainer> geoContainer;
 
     // Min and max distance from centroid that we're willing to search.
     // Distance is in units of the geometry's CRS, except SPHERE and isNearSphere => radians

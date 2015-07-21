@@ -60,6 +60,25 @@ struct GeoNearParams {
     bool addDistMeta;
 };
 
+class SearchInterval {
+public:
+    SearchInterval(const GeometryContainer& geoContainer, double inner, double outer)
+        : _geoContainer(geoContainer), _inner(inner), _outer(outer) {}
+
+    const GeometryContainer& geoContainer() const { return _geoContainer; }
+
+    double getInner() const { return _inner; }
+    double getOuter() const { return _outer; }
+    void setInner(double inner) { _inner = inner; }
+    void setOuter(double outer) { _outer = outer; }
+
+private:
+    const GeometryContainer& _geoContainer;
+    double _inner;
+    double _outer;
+};
+
+
 /**
  * Implementation of GeoNear on top of a 2D index
  */
@@ -140,11 +159,11 @@ private:
 
     S2IndexingParams _indexParams;
 
-    // The total search annulus
-    const R2Annulus _fullBounds;
+    // The total search interval
+    const SearchInterval _fullBounds;
 
-    // The current search annulus
-    R2Annulus _currBounds;
+    // The current search interval
+    SearchInterval _currBounds;
 
     // Amount to increment the next bounds by
     double _boundsIncrement;

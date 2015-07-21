@@ -167,9 +167,8 @@ bool GeoNearExpression::parseLegacyQuery(const BSONObj& obj) {
     // First, try legacy near, e.g.:
     // t.find({ loc : { $nearSphere: [0,0], $minDistance: 1, $maxDistance: 3 }})
     // t.find({ loc : { $nearSphere: [0,0] }})
-    // t.find({ loc : { $near : [0, 0, 1] } });
-    // t.find({ loc : { $near: { someGeoJSONPoint}})
-    // t.find({ loc : { $geoNear: { someGeoJSONPoint}})
+    // t.find({ loc : { $near: { someGeoJSONObject}})
+    // t.find({ loc : { $geoNear: { someGeoJSONObject}})
     BSONObjIterator it(obj);
     while (it.more()) {
         BSONElement e = it.next();
@@ -180,8 +179,7 @@ bool GeoNearExpression::parseLegacyQuery(const BSONObj& obj) {
             }
             BSONObj embeddedObj = e.embeddedObject();
 
-            if (GeoParser::parseQueryPoint(e, centroid.get()).isOK() ||
-                GeoParser::parsePointWithMaxDistance(embeddedObj, centroid.get(), &maxDistance)) {
+            if (geoContainer->parseFromQuery(e).isOK()) {
                 uassert(18522, "max distance must be non-negative", maxDistance >= 0.0);
                 hasGeometry = true;
                 isNearSphere = equals(e.fieldName(), "$nearSphere");
@@ -238,7 +236,7 @@ Status GeoNearExpression::parseNewQuery(const BSONObj& obj) {
         if (equals(e.fieldName(), "$geometry")) {
             if (e.isABSONObj()) {
                 BSONObj embeddedObj = e.embeddedObject();
-                Status status = GeoParser::parseQueryPoint(e, centroid.get());
+                Status status = geoContainer->parseFromQuery(e);
                 if (!status.isOK()) {
                     return Status(ErrorCodes::BadValue,
                                   str::stream()
@@ -246,8 +244,8 @@ Status GeoNearExpression::parseNewQuery(const BSONObj& obj) {
                                       << embeddedObj << "  " << status.reason());
                 }
                 uassert(16681,
-                        "$near requires geojson point, given " + embeddedObj.toString(),
-                        (SPHERE == centroid->crs));
+                        "$near requires geojson geometry, given " + embeddedObj.toString(),
+                        (SPHERE == geoContainer->getNativeCRS()));
                 hasGeometry = true;
             }
         } else if (equals(e.fieldName(), "$minDistance")) {
@@ -271,7 +269,7 @@ Status GeoNearExpression::parseNewQuery(const BSONObj& obj) {
 
 Status GeoNearExpression::parseFrom(const BSONObj& obj) {
     Status status = Status::OK();
-    centroid.reset(new PointWithCRS());
+    geoContainer.reset(new GeometryContainer());
 
     if (!parseLegacyQuery(obj)) {
         // Clear out any half-baked data.
@@ -290,18 +288,18 @@ Status GeoNearExpression::parseFrom(const BSONObj& obj) {
         // The user-provided point can be flat for a spherical query - needs to be projectable
         uassert(17444,
                 "Legacy point is out of bounds for spherical query",
-                ShapeProjection::supportsProject(*centroid, SPHERE));
+                geoContainer->supportsProject(SPHERE));
 
-        unitsAreRadians = SPHERE != centroid->crs;
+        unitsAreRadians = SPHERE != geoContainer->getNativeCRS();
         // GeoJSON points imply wrapping queries
-        isWrappingQuery = SPHERE == centroid->crs;
+        isWrappingQuery = SPHERE == geoContainer->getNativeCRS();
 
         // Project the point to a spherical CRS now that we've got the settings we need
         // We need to manually project here since we aren't using GeometryContainer
-        ShapeProjection::projectInto(centroid.get(), SPHERE);
+        geoContainer->projectInto(SPHERE);
     } else {
         unitsAreRadians = false;
-        isWrappingQuery = SPHERE == centroid->crs;
+        isWrappingQuery = SPHERE == geoContainer->getNativeCRS();
     }
 
     return status;

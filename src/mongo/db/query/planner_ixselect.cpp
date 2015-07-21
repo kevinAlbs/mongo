@@ -247,14 +247,14 @@ bool QueryPlannerIXSelect::compatible(const BSONElement& elt,
         } else if (exprtype == MatchExpression::GEO_NEAR) {
             GeoNearMatchExpression* gnme = static_cast<GeoNearMatchExpression*>(node);
             // Make sure the near query is compatible with 2dsphere.
-            return gnme->getData().centroid->crs == SPHERE;
+            return gnme->getData().geoContainer->getNativeCRS() == SPHERE;
         }
         return false;
     } else if (IndexNames::GEO_2D == indexedFieldType) {
         if (exprtype == MatchExpression::GEO_NEAR) {
             GeoNearMatchExpression* gnme = static_cast<GeoNearMatchExpression*>(node);
             // Make sure the near query is compatible with 2d index
-            return gnme->getData().centroid->crs == FLAT || !gnme->getData().isWrappingQuery;
+            return gnme->getData().geoContainer->getNativeCRS() == FLAT || !gnme->getData().isWrappingQuery;
         } else if (exprtype == MatchExpression::GEO) {
             // 2d only supports within.
             GeoMatchExpression* gme = static_cast<GeoMatchExpression*>(node);
