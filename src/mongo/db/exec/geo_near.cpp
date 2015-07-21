@@ -980,17 +980,27 @@ S2Region* buildS2Region(const SearchInterval& searchInterval) {
 
 class RegionBuffer: public S2Region {
 public:
-    RegionBuffer(GeometryContainer& geoContainer) : _geoContainer(geoContainer) {}
-    S2Cap GetCapBound() {
+    RegionBuffer(GeometryContainer& geoContainer, double bufferDistance)
+        : _geoContainer(geoContainer), _bufferDistance(bufferDistance) {}
+    S2Cap GetCapBound() const {
         S2Region& region = _geoContainer.getS2Region();
         S2Cap initialBound = region.GetCapBound();
-        S1Angle distance = S1Angle::Radians(initialBound.angle().radians() + bufferDistance);
+        S1Angle distance = S1Angle::Radians(initialBound.angle().radians() + _bufferDistance);
         return S2Cap::FromAxisAngle(initialBound.axis(), distance);
+    }
+
+    bool MayIntersect(S2Cell const& cell) const {
+        S2Cap cellCap = cell.GetCapBound();
+        PointWithCRS cellCentroid;
+        cellCentroid.point = cellCap.axis();
+        cellCentroid.crs = SPHERE;
+        return _geoContainer.minDistance(cellCentroid) <
+                _bufferDistance + cellCap.angle().radians();;
     }
 
 private:
     GeometryContainer& _geoContainer;
-    double bufferDistance; // in radians
+    double _bufferDistance; // in radians
 };
 
 }
