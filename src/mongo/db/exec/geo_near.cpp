@@ -936,54 +936,12 @@ PlanStage::StageState GeoNear2DSphereStage::initialize(OperationContext* txn,
 
 namespace {
 
-
-S2Region* buildS2PointRegion(const S2Point& point, double inner, double outer) {
-    vector<S2Region*> regions;
-
-    if (inner > 0) {
-        // TODO: Currently a workaround to fix occasional floating point errors
-        // in S2, where sometimes points near the axis will not be returned
-        // if inner == 0
-        S2Cap innerCap = S2Cap::FromAxisAngle(point,
-                                              S1Angle::Radians(inner / kRadiusOfEarthInMeters));
-        innerCap = innerCap.Complement();
-        regions.push_back(new S2Cap(innerCap));
-    }
-
-    // We only need to max bound if this is not a full search of the Earth
-    // Using the constant here is important since we use the min of kMaxEarthDistance
-    // and the actual bounds passed in to set up the search area.
-    if (outer < kMaxEarthDistanceInMeters) {
-        S2Cap outerCap = S2Cap::FromAxisAngle(point,
-                                              S1Angle::Radians(outer / kRadiusOfEarthInMeters));
-        regions.push_back(new S2Cap(outerCap));
-    }
-
-    // if annulus is entire world, return a full cap
-    if (regions.empty()) {
-        regions.push_back(new S2Cap(S2Cap::Full()));
-    }
-
-    // Takes ownership of caps
-    return new S2RegionIntersection(&regions);
-}
-
-S2Region* buildS2Region(const SearchInterval& searchInterval) {
-    const GeometryContainer& geoContainer = searchInterval.geoContainer();
-    if (geoContainer.isPoint()) {
-        return buildS2PointRegion(geoContainer.getPointWithCRS().point,
-                                  searchInterval.getInner(),
-                                  searchInterval.getOuter());
-    }
-    return nullptr;
-}
-
 class RegionBuffer: public S2Region {
 public:
-    RegionBuffer(GeometryContainer& geoContainer, double bufferDistance)
+    RegionBuffer(const GeometryContainer& geoContainer, double bufferDistance)
         : _geoContainer(geoContainer), _bufferDistance(bufferDistance) {}
     S2Cap GetCapBound() const {
-        S2Region& region = _geoContainer.getS2Region();
+        const S2Region& region = _geoContainer.getS2Region();
         S2Cap initialBound = region.GetCapBound();
         S1Angle distance = S1Angle::Radians(initialBound.angle().radians() + _bufferDistance);
         return S2Cap::FromAxisAngle(initialBound.axis(), distance);
@@ -994,7 +952,7 @@ public:
         PointWithCRS cellCentroid;
         cellCentroid.point = cellCap.axis();
         cellCentroid.crs = SPHERE;
-        return _geoContainer.minDistance(cellCentroid) <
+        return _geoContainer.minDistance(cellCentroid) / kRadiusOfEarthInMeters <
                 _bufferDistance + cellCap.angle().radians();
     }
 
@@ -1003,14 +961,26 @@ public:
         PointWithCRS cellCentroid;
         cellCentroid.point = cellCap.axis();
         cellCentroid.crs = SPHERE;
-        return _geoContainer.minDistance(cellCentroid) <
+        return _geoContainer.minDistance(cellCentroid) / kRadiusOfEarthInMeters <
                 _bufferDistance - cellCap.angle().radians();
     }
 
+    bool VirtualContainsPoint(S2Point const& p) const { return false; }
+    void Encode(Encoder* const encoder) const {}
+    bool Decode(Decoder* const decoder) { return true; }
+    bool DecodeWithinScope(Decoder* const decoder) { return true; }
+    S2Region* Clone() const { return nullptr; }
+    S2LatLngRect GetRectBound() const { return S2LatLngRect::Empty(); }
+
 private:
-    GeometryContainer& _geoContainer;
+    const GeometryContainer& _geoContainer;
     double _bufferDistance; // in radians
 };
+
+S2Region* buildS2Region(const SearchInterval& searchInterval) {
+    return new RegionBuffer(searchInterval.geoContainer(),
+                            searchInterval.getOuter() / kRadiusOfEarthInMeters);
+}
 
 }
 
