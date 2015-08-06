@@ -426,7 +426,7 @@ static inline int PlanarOrderedCCW(Vector2_d const& a, Vector2_d const& b,
 }
 
 void printPoint(S2Point const& p) {
-    std::cout << std::setprecision(10) << "(" << p.x() << "," << p.y() << "," << p.z() << ")\n";
+    std::cout << std::setprecision(100) << "(" << p.x() << "," << p.y() << "," << p.z() << ")\n";
     S2LatLng llrep(p);
     std::cout << "[" << llrep.lng().degrees() << "," << llrep.lat().degrees() << "]\n";
 }
@@ -500,11 +500,17 @@ int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
         std::cout << "ALBS Case 3\n";
       sign = vbc.CrossProd(vab).DotProd(b) * sbc;  // CA is longest edge
     } else {
-      sign = vca.CrossProd(vbc).DotProd(c) * sca;  // AB is longest edge
-      std::cout << "ALBS Case 4\n";
+        // In Windows case this is 0, in OSX this is -2.518674809e-18
+        std::cout << "Computations\n";
+        std::cout << "[1] " << std::setprecision(100) << vca << "\n";
+        std::cout << "[2] " << std::setprecision(100) << sca << "\n";
+        std::cout << "[3] " << std::setprecision(100) << vca.CrossProd(vbc) << "\n";
+
+        sign = vca.CrossProd(vbc).DotProd(c) * sca;  // AB is longest edge
+        std::cout << "ALBS Case 4\n";
     }
   }
-  std::cout << "ALBS sign is " << sign;
+  std::cout << "ALBS sign is " << sign << "\n";
   if (sign > 0) return 1;
   if (sign < 0) return -1;
 
