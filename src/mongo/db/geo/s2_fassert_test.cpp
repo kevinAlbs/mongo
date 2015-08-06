@@ -7,17 +7,26 @@
 #include "third_party/s2/s2latlng.h"
 
 namespace mongo {
+    union Exact {
+        double asDouble;
+        unsigned long long asLongLong;
+    };
+
     TEST(S2WindowsFassert, Ticket) {
         S2Point pt;
-        S2LatLng ll = S2LatLng::FromDegrees(0, -45).Normalized();
+        S2LatLng ll = S2LatLng::FromDegrees(0, -45);
+        Exact representation;
+
+        representation.asDouble = ll.lng().radians();
+        log() << "lng is:";
+        log() << representation.asLongLong;
+        representation.asDouble = drem(ll.lng().radians(), 2 * M_PI);
+        log() << "After drem it is:";
+        log() << representation.asLongLong;
+
+        ll = ll.Normalized();
         pt = ll.ToPoint();
 
-        union Exact {
-            double asDouble;
-            unsigned long long asLongLong;
-        };
-
-        Exact representation;
         representation.asDouble = pt.y();
         log() << "Exact representation of y is:";
         log() << representation.asLongLong;
