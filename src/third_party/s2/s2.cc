@@ -417,8 +417,10 @@ static inline int PlanarOrderedCCW(Vector2_d const& a, Vector2_d const& b,
 }
 
 int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
+  std::cout << "ALBS Entering S2::ExpensiveCCW\n";
   // Return zero if and only if two points are the same.  This ensures (1).
   if (a == b || b == c || c == a) return 0;
+  std::cout << "ALBS All points are different\n";
 
   // Now compute the determinant in a stable way.  Since all three points are
   // unit length and we know that the determinant is very close to zero, this
@@ -489,19 +491,25 @@ int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
   // perturbed by this amount.  It turns out that this is equivalent to
   // checking whether the points are ordered CCW around the origin first in
   // the Y-Z plane, then in the Z-X plane, and then in the X-Y plane.
-
+  std::cout << "ALBS Attempting perturbation\n";
   int ccw = PlanarOrderedCCW(Vector2_d(a.y(), a.z()), Vector2_d(b.y(), b.z()),
                              Vector2_d(c.y(), c.z()));
+  std::cout << "ALBS YZ Plane [" << ccw << "]\n";
   if (ccw == 0) {
     ccw = PlanarOrderedCCW(Vector2_d(a.z(), a.x()), Vector2_d(b.z(), b.x()),
                            Vector2_d(c.z(), c.x()));
+    std::cout << "ALBS ZX Plane [" << ccw << "]\n";
     if (ccw == 0) {
       ccw = PlanarOrderedCCW(Vector2_d(a.x(), a.y()), Vector2_d(b.x(), b.y()),
                              Vector2_d(c.x(), c.y()));
+      std::cout << "ALBS XY Plane [" << ccw << "]\n";
       // There are a few cases where "ccw" may still be zero despite our best
       // efforts.  For example, two input points may be exactly proportional
       // to each other (where both still satisfy IsNormalized()).
     }
+  }
+  if (ccw == 0) {
+      std::cout << "ALBS We're fucked.\n";
   }
   return ccw;
 }
