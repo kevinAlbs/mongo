@@ -400,10 +400,10 @@ static inline int PlanarCCW(Vector2_d const& a, Vector2_d const& b) {
   double db = b.Norm2();
   double sign;
   if (da < db || (da == db && a < b)) {
-      std::cout << "ALBS PlanarCCW Condition 1\n";
+      std::cout << "PlanarCCW Condition 1\n";
     sign = a.CrossProd(vab) * sab;
   } else {
-      std::cout << "ALBS PlanarCCW Condition 2\n";
+      std::cout << "PlanarCCW Condition 2\n";
     sign = vab.CrossProd(b);
   }
   if (sign > 0) return 1;
@@ -426,13 +426,23 @@ static inline int PlanarOrderedCCW(Vector2_d const& a, Vector2_d const& b,
 }
 
 void printPoint(S2Point const& p) {
-    std::cout << std::setprecision(100) << "(" << p.x() << "," << p.y() << "," << p.z() << ")\n";
-    S2LatLng llrep(p);
-    std::cout << "[" << llrep.lng().degrees() << "," << llrep.lat().degrees() << "]\n";
+    union Rep {
+        double dValue;
+        uint64_t iValue;
+    };
+    Rep outUnion;
+    std::cout << "(";
+    outUnion.dValue= p.x();
+    std::cout << outUnion.iValue << ",";
+    outUnion.dValue = p.y();
+    std::cout << outUnion.iValue << ",";
+    outUnion.dValue = p.z();
+    std::cout << outUnion.iValue << ")";
+    std::cout << std::endl;
 }
 
 int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
-  std::cout << "ALBS Entering S2::ExpensiveCCW\n";
+  std::cout << "Entering S2::ExpensiveCCW\n";
   std::cout << "a: ";
   printPoint(a);
   std::cout << "b: ";
@@ -441,7 +451,7 @@ int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
   printPoint(c);
   // Return zero if and only if two points are the same.  This ensures (1).
   if (a == b || b == c || c == a) return 0;
-  std::cout << "ALBS All points are different\n";
+  std::cout << "All points are different\n";
 
   // Now compute the determinant in a stable way.  Since all three points are
   // unit length and we know that the determinant is very close to zero, this
@@ -488,16 +498,16 @@ int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
   double sign;
   if (dca < dbc || (dca == dbc && a < b)) {
     if (dab < dbc || (dab == dbc && a < c)) {
-        std::cout << "ALBS Case 1\n";
+        std::cout << "Case 1\n";
       // The "sab" factor converts A +/- B into B +/- A.
       sign = vab.CrossProd(vca).DotProd(a) * sab;  // BC is longest edge
     } else {
-        std::cout << "ALBS Case 2\n";
+        std::cout << "Case 2\n";
       sign = vca.CrossProd(vbc).DotProd(c) * sca;  // AB is longest edge
     }
   } else {
     if (dab < dca || (dab == dca && b < c)) {
-        std::cout << "ALBS Case 3\n";
+        std::cout << "Case 3\n";
       sign = vbc.CrossProd(vab).DotProd(b) * sbc;  // CA is longest edge
     } else {
         // In Windows case this is 0, in OSX this is -2.518674809e-18
@@ -507,10 +517,10 @@ int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
         std::cout << "[3] " << std::setprecision(100) << vca.CrossProd(vbc) << "\n";
 
         sign = vca.CrossProd(vbc).DotProd(c) * sca;  // AB is longest edge
-        std::cout << "ALBS Case 4\n";
+        std::cout << "Case 4\n";
     }
   }
-  std::cout << "ALBS sign is " << sign << "\n";
+  std::cout << "sign is " << sign << "\n";
   if (sign > 0) return 1;
   if (sign < 0) return -1;
 
@@ -523,25 +533,25 @@ int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
   // perturbed by this amount.  It turns out that this is equivalent to
   // checking whether the points are ordered CCW around the origin first in
   // the Y-Z plane, then in the Z-X plane, and then in the X-Y plane.
-  std::cout << "ALBS Attempting perturbation\n";
+  std::cout << "Attempting perturbation\n";
   int ccw = PlanarOrderedCCW(Vector2_d(a.y(), a.z()), Vector2_d(b.y(), b.z()),
                              Vector2_d(c.y(), c.z()));
-  std::cout << "ALBS YZ Plane [" << ccw << "]\n";
+  std::cout << "YZ Plane [" << ccw << "]\n";
   if (ccw == 0) {
     ccw = PlanarOrderedCCW(Vector2_d(a.z(), a.x()), Vector2_d(b.z(), b.x()),
                            Vector2_d(c.z(), c.x()));
-    std::cout << "ALBS ZX Plane [" << ccw << "]\n";
+    std::cout << "ZX Plane [" << ccw << "]\n";
     if (ccw == 0) {
       ccw = PlanarOrderedCCW(Vector2_d(a.x(), a.y()), Vector2_d(b.x(), b.y()),
                              Vector2_d(c.x(), c.y()));
-      std::cout << "ALBS XY Plane [" << ccw << "]\n";
+      std::cout << "XY Plane [" << ccw << "]\n";
       // There are a few cases where "ccw" may still be zero despite our best
       // efforts.  For example, two input points may be exactly proportional
       // to each other (where both still satisfy IsNormalized()).
     }
   }
   if (ccw == 0) {
-      std::cout << "ALBS We're fucked.\n";
+      std::cout << "We're fucked.\n";
   }
   return ccw;
 }
