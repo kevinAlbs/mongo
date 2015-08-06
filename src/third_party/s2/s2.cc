@@ -2,6 +2,9 @@
 
 #include "s2.h"
 
+#include <iomanip>
+
+#include "s2latlng.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "util/math/matrix3x3-inl.h"
@@ -416,8 +419,20 @@ static inline int PlanarOrderedCCW(Vector2_d const& a, Vector2_d const& b,
   return 0;
 }
 
+void printPoint(S2Point const& p) {
+    std::cout << std::setprecision(10) << "(" << p.x() << "," << p.y() << "," << p.z() << ")\n";
+    S2LatLng llrep(p);
+    std::cout << "[" << llrep.lng().degrees() << "," << llrep.lat().degrees() << "]\n";
+}
+
 int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
   std::cout << "ALBS Entering S2::ExpensiveCCW\n";
+  std::cout << "a: ";
+  printPoint(a);
+  std::cout << "b: ";
+  printPoint(b);
+  std::cout << "c: ";
+  printPoint(c);
   // Return zero if and only if two points are the same.  This ensures (1).
   if (a == b || b == c || c == a) return 0;
   std::cout << "ALBS All points are different\n";
