@@ -1,10 +1,8 @@
-#include <iomanip>
-
 #define MONGO_LOG_DEFAULT_COMPONENT ::mongo::logger::LogComponent::kGeo
 
+#include "mongo/db/geo/geoparser.h"
 #include "mongo/unittest/unittest.h"
 #include "mongo/util/log.h"
-#include "geoparser.h"
 #include "third_party/s2/s2.h"
 #include "third_party/s2/s2latlng.h"
 
