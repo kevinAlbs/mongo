@@ -20,13 +20,23 @@ namespace mongo {
         representation.asDouble = ll.lng().radians();
         log() << "lng is:";
         log() << representation.asLongLong;
+
         representation.asDouble = drem(ll.lng().radians(), 2 * M_PI);
         log() << "After drem it is:";
         log() << representation.asLongLong;
+        // On OSX     13828621494152080664
+        // On Windows <same>
 
         ll = ll.Normalized();
-        pt = ll.ToPoint();
 
+        representation.asDouble = ll.lng().radians();
+        log() << "Normalized lng:";
+        log() << representation.asLongLong;
+        representation.asDouble = ll.lat().radians();
+        log() << "Normalized lat:";
+        log() << representation.asLongLong;
+
+        pt = ll.ToPoint();
         representation.asDouble = pt.y();
         log() << "Exact representation of y is:";
         log() << representation.asLongLong;

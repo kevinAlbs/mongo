@@ -36,6 +36,20 @@ int S2EdgeUtil::RobustCrossing(S2Point const& a, S2Point const& b,
   return crosser.RobustCrossing(&d);
 }
 
+void printExactPoint(S2Point const& p) {
+    union Exact {
+            double asDouble;
+            unsigned long long asLongLong;
+        };
+    Exact rep;
+    rep.asDouble = p.x();
+    std::cout << "[" << rep.asLongLong;
+    rep.asDouble = p.y();
+    std::cout << "," << rep.asLongLong;
+    rep.asDouble = p.z();
+    std::cout << "," << rep.asLongLong << "]\n";
+}
+
 bool S2EdgeUtil::VertexCrossing(S2Point const& a, S2Point const& b,
                                 S2Point const& c, S2Point const& d) {
   // If A == B or C == D there is no intersection.  We need to check this
@@ -50,6 +64,15 @@ bool S2EdgeUtil::VertexCrossing(S2Point const& a, S2Point const& b,
   if (b == c) return S2::OrderedCCW(S2::Ortho(b), d, a, b);
   if (a == c) return S2::OrderedCCW(S2::Ortho(a), d, b, a);
   if (b == d) return S2::OrderedCCW(S2::Ortho(b), c, a, b);
+
+  std::cout << "A ";
+  printExactPoint(a);
+  std::cout << "B ";
+  printExactPoint(b);
+  std::cout << "C ";
+  printExactPoint(c);
+  std::cout << "D ";
+  printExactPoint(d);
 
   S2LOG(DFATAL) << "VertexCrossing called with 4 distinct vertices";
   return false;
