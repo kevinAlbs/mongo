@@ -1,29 +1,29 @@
 #include <iomanip>
 
+#define MONGO_LOG_DEFAULT_COMPONENT ::mongo::logger::LogComponent::kGeo
+
 #include "mongo/unittest/unittest.h"
+#include "mongo/util/log.h"
 #include "geoparser.h"
 #include "third_party/s2/s2.h"
 #include "third_party/s2/s2latlng.h"
 
-namespace {
-    TEST(S2Fassert, Ticket) {
-        S2Point out;
+namespace mongo {
+    TEST(S2WindowsFassert, Ticket) {
+        S2Point pt;
         S2LatLng ll = S2LatLng::FromDegrees(0, -45).Normalized();
-        out = ll.ToPoint();
-        std::cout << std::setprecision(100) << out.x() << std::endl;
-        std::cout << std::setprecision(100) << out.y() << std::endl;
-        std::cout << std::setprecision(100) << out.z() << std::endl;
+        pt = ll.ToPoint();
 
-        std::cout << "Binary representation of out.x() is" << std::endl;
-
-        union Rep {
-            double dValue;
-            uint64_t iValue;
+        union Exact {
+            double asDouble;
+            unsigned long long asLongLong;
         };
 
-        Rep outUnion;
-        outUnion.dValue= out.y();
-        std::cout << outUnion.iValue;
-        std::cout << std::endl;
+        Exact representation;
+        representation.asDouble = pt.y();
+        log() << "Exact representation of y is:";
+        log() << representation.asLongLong;
+        // On OSX     13827916308072577996
+        // On Windows 13827916308072577997
     }
 }
