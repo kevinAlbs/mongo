@@ -22,7 +22,7 @@ namespace {
         };
 
         Rep outUnion;
-        outUnion.dValue= out.x();
+        outUnion.dValue= out.y();
         std::cout << outUnion.iValue;
         std::cout << std::endl;
     }
