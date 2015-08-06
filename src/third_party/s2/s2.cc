@@ -394,13 +394,16 @@ int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
 static inline int PlanarCCW(Vector2_d const& a, Vector2_d const& b) {
   // Return +1 if the edge AB is CCW around the origin, etc.
   double sab = (a.DotProd(b) > 0) ? -1 : 1;
+
   Vector2_d vab = a + sab * b;
   double da = a.Norm2();
   double db = b.Norm2();
   double sign;
   if (da < db || (da == db && a < b)) {
+      std::cout << "ALBS PlanarCCW Condition 1\n";
     sign = a.CrossProd(vab) * sab;
   } else {
+      std::cout << "ALBS PlanarCCW Condition 2\n";
     sign = vab.CrossProd(b);
   }
   if (sign > 0) return 1;
@@ -412,8 +415,11 @@ static inline int PlanarOrderedCCW(Vector2_d const& a, Vector2_d const& b,
                                    Vector2_d const& c) {
   int sum = 0;
   sum += PlanarCCW(a, b);
+  std::cout << "Sum(a,b) is " << sum << "\n";
   sum += PlanarCCW(b, c);
+  std::cout << "+Sum(b,c) is " << sum << "\n";
   sum += PlanarCCW(c, a);
+  std::cout << "+Sum(c,a) is " << sum << "\n";
   if (sum > 0) return 1;
   if (sum < 0) return -1;
   return 0;
