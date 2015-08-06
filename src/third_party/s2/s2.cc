@@ -488,18 +488,23 @@ int S2::ExpensiveCCW(S2Point const& a, S2Point const& b, S2Point const& c) {
   double sign;
   if (dca < dbc || (dca == dbc && a < b)) {
     if (dab < dbc || (dab == dbc && a < c)) {
+        std::cout << "ALBS Case 1\n";
       // The "sab" factor converts A +/- B into B +/- A.
       sign = vab.CrossProd(vca).DotProd(a) * sab;  // BC is longest edge
     } else {
+        std::cout << "ALBS Case 2\n";
       sign = vca.CrossProd(vbc).DotProd(c) * sca;  // AB is longest edge
     }
   } else {
     if (dab < dca || (dab == dca && b < c)) {
+        std::cout << "ALBS Case 3\n";
       sign = vbc.CrossProd(vab).DotProd(b) * sbc;  // CA is longest edge
     } else {
       sign = vca.CrossProd(vbc).DotProd(c) * sca;  // AB is longest edge
+      std::cout << "ALBS Case 4\n";
     }
   }
+  std::cout << "ALBS sign is " << sign;
   if (sign > 0) return 1;
   if (sign < 0) return -1;
 
