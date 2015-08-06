@@ -5,6 +5,7 @@
 #include "mongo/util/log.h"
 #include "third_party/s2/s2.h"
 #include "third_party/s2/s2latlng.h"
+#include "third_party/s2/s2edgeutil.h"
 
 namespace mongo {
     union Exact {
@@ -12,35 +13,31 @@ namespace mongo {
         unsigned long long asLongLong;
     };
 
-    TEST(S2WindowsFassert, Ticket) {
+    void printHex(double num) {
+        Exact converter;
+        converter.asDouble = num;
+        log() << std::hex << converter.asLongLong;
+    }
+
+    TEST(S2Fassert, Ticket) {
         S2Point pt;
-        S2LatLng ll = S2LatLng::FromDegrees(0, -45);
-        Exact representation;
-
-        representation.asDouble = ll.lng().radians();
-        log() << "lng is:";
-        log() << representation.asLongLong;
-
-        representation.asDouble = drem(ll.lng().radians(), 2 * M_PI);
-        log() << "After drem it is:";
-        log() << representation.asLongLong;
-        // On OSX     13828621494152080664
-        // On Windows <same>
-
-        ll = ll.Normalized();
-
-        representation.asDouble = ll.lng().radians();
-        log() << "Normalized lng:";
-        log() << representation.asLongLong;
-        representation.asDouble = ll.lat().radians();
-        log() << "Normalized lat:";
-        log() << representation.asLongLong;
+        S2LatLng ll = S2LatLng::FromDegrees(0, -45).Normalized();
 
         pt = ll.ToPoint();
-        representation.asDouble = pt.y();
         log() << "Exact representation of y is:";
-        log() << representation.asLongLong;
-        // On OSX     13827916308072577996
-        // On Windows 13827916308072577997
+        printHex(pt.y());
+        // On OSX     0xbfe6a09e667f3bcc
+        // On Windows 0xbfe6a09e667f3bcd
+    }
+
+
+    TEST(S2Fassert, OnOSX) {
+        // These are exact representations of the points which trigger the fassert error on Windows
+        S2Point a(0x3f72b579b431bee4, 0x3feffbb2817d5fad, 0x3fa06d338a2f992d);
+        S2Point b(0x3fe6a09e667f3bcd, 0xbfe6a09e667f3bcd, 0x0);
+        S2Point c(0x3fe6a09e667f3bcc, 0xbfe6a09e667f3bcc, 0x0);
+        S2Point d(0x3fe6becebc67a3a9, 0xbfe682459384dfd4, 0x0);
+
+        log() << S2EdgeUtil::EdgeOrVertexCrossing(a,b,c,d);
     }
 }
