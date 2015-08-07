@@ -11,7 +11,7 @@ env.SConscript( [
 	"util/math/SConscript",
         ], exports={ 'env' : env })
 
-env.Append(CCFLAGS=['-DDEBUG_MODE=false'])
+env.Append(CCFLAGS=['-DDEBUG_MODE=false', '-DS2_USE_EXACTFLOAT'])
 
 # Clang warns about struct/class tag mismatch, but as long as this is
 # not a problem on Windows, these mismatches can be ignored
