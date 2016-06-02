@@ -3,6 +3,15 @@
 Import("env")
 
 env.Library(
+    target='operation_latency_histogram',
+    source=[
+        'operation_latency_histogram.cpp'
+    ],
+    LIBDEPS=[
+        '$BUILD_DIR/mongo/base',
+    ])
+
+env.Library(
     target='timer_stats',
     source=[
         'timer_stats.cpp',
@@ -31,6 +40,7 @@ env.Library(
     ],
     LIBDEPS=[
         '$BUILD_DIR/mongo/db/service_context',
+        '$BUILD_DIR/mongo/db/stats/operation_latency_histogram',
     ],
 )
 
