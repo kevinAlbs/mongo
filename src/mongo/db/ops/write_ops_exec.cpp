@@ -86,7 +86,8 @@ void finishCurOp(OperationContext* txn, CurOp* curOp) {
 
         recordCurOpMetrics(txn);
         Top::get(txn->getServiceContext())
-            .record(curOp->getNS(),
+            .record(txn,
+                    curOp->getNS(),
                     curOp->getLogicalOp(),
                     1,  // "write locked"
                     curOp->totalTimeMicros(),
@@ -392,7 +393,8 @@ WriteResult performInserts(OperationContext* txn, const InsertOp& wholeOp) {
         // top-level curOp. The rest is handled by the top-level entrypoint.
         curOp.done();
         Top::get(txn->getServiceContext())
-            .record(wholeOp.ns.ns(),
+            .record(txn,
+                    wholeOp.ns.ns(),
                     LogicalOp::opInsert,
                     1 /* write locked*/,
                     curOp.totalTimeMicros(),

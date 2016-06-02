@@ -30,7 +30,10 @@
 #pragma once
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <memory>
 
+#include "mongo/db/operation_context.h"
+#include "mongo/db/stats/operation_latency_histogram.h"
 #include "mongo/util/concurrency/mutex.h"
 #include "mongo/util/net/message.h"
 #include "mongo/util/string_map.h"
@@ -78,12 +81,18 @@ public:
         UsageData update;
         UsageData remove;
         UsageData commands;
+        std::shared_ptr<OperationLatencyHistogram> opLatencyHistogram;
     };
 
     typedef StringMap<CollectionData> UsageMap;
 
 public:
-    void record(StringData ns, LogicalOp logicalOp, int lockType, long long micros, bool command);
+    void record(OperationContext* txn,
+                StringData ns,
+                LogicalOp logicalOp,
+                int lockType,
+                long long micros,
+                bool command);
     void append(BSONObjBuilder& b);
     void cloneMap(UsageMap& out) const;
     void collectionDropped(StringData ns);
@@ -91,7 +100,11 @@ public:
 private:
     void _appendToUsageMap(BSONObjBuilder& b, const UsageMap& map) const;
     void _appendStatsEntry(BSONObjBuilder& b, const char* statsName, const UsageData& map) const;
-    void _record(CollectionData& c, LogicalOp logicalOp, int lockType, long long micros);
+    void _record(OperationContext* txn,
+                 CollectionData& c,
+                 LogicalOp logicalOp,
+                 int lockType,
+                 long long micros);
 
     mutable SimpleMutex _lock;
     UsageMap _usage;

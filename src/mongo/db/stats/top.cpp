@@ -72,7 +72,12 @@ Top& Top::get(ServiceContext* service) {
     return getTop(service);
 }
 
-void Top::record(StringData ns, LogicalOp logicalOp, int lockType, long long micros, bool command) {
+void Top::record(OperationContext* txn,
+                 StringData ns,
+                 LogicalOp logicalOp,
+                 int lockType,
+                 long long micros,
+                 bool command) {
     if (ns[0] == '?')
         return;
 
@@ -86,11 +91,23 @@ void Top::record(StringData ns, LogicalOp logicalOp, int lockType, long long mic
         return;
     }
 
+    if (_usage.find(hashedNs) == _usage.end()) {
+        _usage[hashedNs].opLatencyHistogram.reset(new OperationLatencyHistogram());
+    }
+
     CollectionData& coll = _usage[hashedNs];
-    _record(coll, logicalOp, lockType, micros);
+    _record(txn, coll, logicalOp, lockType, micros);
 }
 
-void Top::_record(CollectionData& c, LogicalOp logicalOp, int lockType, long long micros) {
+void Top::_record(
+    OperationContext* txn, CollectionData& c, LogicalOp logicalOp, int lockType, long long micros) {
+    // Only update histograms if operation came from user.
+    if (txn->getClient()->isFromUserConnection()) {
+        int histogramBucket = OperationLatencyHistogram::getBucket(micros);
+        c.opLatencyHistogram->incrementBucket(histogramBucket, logicalOp);
+        globalHistogramStats.incrementBucket(histogramBucket, logicalOp);
+    }
+
     c.total.inc(micros);
 
     if (lockType > 0)
