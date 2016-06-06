@@ -66,7 +66,7 @@ int OperationLatencyHistogram::getBucket(uint64_t value) {
     }
 }
 
-void OperationLatencyHistogram::incrementBucket(int bucket, LogicalOp op) {
+void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, LogicalOp op) {
     log() << "Histogram increment on op: " << logicalOpToString(op);
     switch (op) {
         case LogicalOp::opMsg:
@@ -92,6 +92,7 @@ void OperationLatencyHistogram::incrementBucket(int bucket, LogicalOp op) {
             MONGO_UNREACHABLE;
     }
     _numEntries++;
+    _totalLatency += latency;
 }
 
 OperationLatencyHistogram globalHistogramStats;
