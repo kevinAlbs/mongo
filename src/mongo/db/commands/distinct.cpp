@@ -90,6 +90,9 @@ public:
     bool supportsReadConcern() const final {
         return true;
     }
+    HistogramType getHistogramType() const {
+        return HistogramType::opRead;
+    }
 
     std::size_t reserveBytesForReply() const override {
         return FindCommon::kInitReplyBufferSize;

@@ -34,10 +34,17 @@
 
 #include "mongo/db/namespace_string.h"
 #include "mongo/platform/bits.h"
+#include "mongo/stdx/mutex.h"
 #include "mongo/util/log.h"
 #include "mongo/util/net/message.h"
 
 namespace mongo {
+
+namespace {
+OperationLatencyHistogram globalHistogramStats;
+stdx::mutex globalHistogramLock;
+
+} // namespace
 
 // Computes the log base 2 of value, and checks for cases of split buckets.
 int OperationLatencyHistogram::getBucket(uint64_t value) {
@@ -66,24 +73,41 @@ int OperationLatencyHistogram::getBucket(uint64_t value) {
     }
 }
 
-void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, LogicalOp op) {
-    log() << "Histogram increment on op: " << logicalOpToString(op);
+void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, HistogramType op) {
     switch (op) {
-        case LogicalOp::opMsg:
-        case LogicalOp::opQuery:
-        case LogicalOp::opGetMore:
-            log() << "Incrementing read";
+        case HistogramType::opRead:
             _readBuckets[bucket]++;
+            _numReads++;
+            _timeReads += latency;
             break;
+        case HistogramType::opWrite:
+            _writeBuckets[bucket]++;
+            _numWrites++;
+            _timeWrites += latency;
+            break;
+        case HistogramType::opCommand:
+            _commandBuckets[bucket]++;
+            _numCommands++;
+            _timeCommands += latency;
+            break;
+        default:
+            MONGO_UNREACHABLE;
+    }
+}
+
+void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, LogicalOp logicalOp) {
+    switch (logicalOp) {
         case LogicalOp::opUpdate:
         case LogicalOp::opInsert:
         case LogicalOp::opDelete:
-            log() << "Incrementing write";
-            _writeBuckets[bucket]++;
+            incrementBucket(latency, bucket, HistogramType::opWrite);
+            break;
+        case LogicalOp::opQuery:
+        case LogicalOp::opGetMore:
+            incrementBucket(latency, bucket, HistogramType::opRead);
             break;
         case LogicalOp::opCommand:
-            log() << "Incrementing command";
-            _commandBuckets[bucket]++;
+            incrementBucket(latency, bucket, HistogramType::opCommand);
             break;
         case LogicalOp::opKillCursors:
         case LogicalOp::opInvalid:
@@ -91,10 +115,13 @@ void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, Lo
         default:
             MONGO_UNREACHABLE;
     }
-    _numEntries++;
-    _totalLatency += latency;
 }
 
-OperationLatencyHistogram globalHistogramStats;
+void incrementGlobalHistogram(uint64_t latency, HistogramType op) {
+    log() << "Incrementing global histogram";
+    int bucket = OperationLatencyHistogram::getBucket(latency);
+    stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
+    globalHistogramStats.incrementBucket(latency, bucket, op);
+}
 
 }  // namespace mongo

@@ -75,6 +75,9 @@ public:
     bool supportsReadConcern() const final {
         return true;
     }
+    HistogramType getHistogramType() const {
+        return HistogramType::opRead;
+    }
     virtual void help(stringstream& help) const {
         help << "count objects in collection";
     }

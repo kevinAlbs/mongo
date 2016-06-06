@@ -171,6 +171,9 @@ public:
     bool supportsReadConcern() const final {
         return true;
     }
+    HistogramType getHistogramType() const {
+        return HistogramType::opRead;
+    }
     virtual void help(stringstream& help) const {
         help << "{ pipeline: [ { $operator: {...}}, ... ]"
              << ", explain: <bool>"

@@ -37,6 +37,8 @@
 
 namespace mongo {
 
+enum class HistogramType {opCommand, opRead, opWrite};
+
 class OperationLatencyHistogram {
 public:
     static const int kMaxBuckets = 51;
@@ -44,16 +46,19 @@ public:
 
     OperationLatencyHistogram() = default;
 
-    void incrementBucket(uint64_t latency, int bucket, LogicalOp op);
+    void incrementBucket(uint64_t latency, int bucket, HistogramType op);
+    void incrementBucket(uint64_t latency, int bucket, LogicalOp logicalOp);
 
 private:
-    std::array<uint64_t, kMaxBuckets> _readBuckets;
-    std::array<uint64_t, kMaxBuckets> _writeBuckets;
-    std::array<uint64_t, kMaxBuckets> _commandBuckets;
-    uint64_t _numEntries;
-    uint64_t _totalLatency;
+    typedef std::array<uint64_t, kMaxBuckets> BucketArr;
+
+    BucketArr _readBuckets;
+    BucketArr _writeBuckets;
+    BucketArr _commandBuckets;
+    uint64_t _numReads, _numWrites, _numCommands;
+    uint64_t _timeReads, _timeWrites, _timeCommands;
 };
 
-extern OperationLatencyHistogram globalHistogramStats;
+void incrementGlobalHistogram(uint64_t latency, HistogramType op);
 
 }  // namespace mongo
