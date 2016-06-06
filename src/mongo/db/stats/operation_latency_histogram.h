@@ -44,6 +44,7 @@ class OperationLatencyHistogram {
 public:
     static const int kMaxBuckets = 51;
     static int getBucket(uint64_t latency);
+    static uint64_t getBucketMicros(int bucket);
 
     OperationLatencyHistogram() = default;
 
@@ -53,9 +54,9 @@ public:
 
 private:
     typedef struct {
-        std::array<uint64_t, kMaxBuckets> buckets;
-        uint64_t entryCount;
-        uint64_t sum;
+        std::array<uint64_t, kMaxBuckets> buckets{};
+        uint64_t entryCount = 0;
+        uint64_t sum = 0;
     } HistogramData;
 
     void _append(const HistogramData& data, const std::string& key, BSONObjBuilder& bb);

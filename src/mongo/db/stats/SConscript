@@ -2,6 +2,15 @@
 
 Import("env")
 
+env.CppUnitTest(
+    target='operation_latency_histogram_test',
+    source=[
+        'operation_latency_histogram_test.cpp'
+        ],
+    LIBDEPS=[
+        '$BUILD_DIR/mongo/db/stats/operation_latency_histogram'
+        ])
+
 env.Library(
     target='operation_latency_histogram',
     source=[

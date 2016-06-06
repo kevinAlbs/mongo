@@ -48,8 +48,20 @@ namespace {
 OperationLatencyHistogram globalHistogramStats;
 stdx::mutex globalHistogramLock;
 
+class GlobalHistogramServerStatusMetric : public ServerStatusMetric {
+public:
+    GlobalHistogramServerStatusMetric() : ServerStatusMetric(".metrics.latency") {}
+    virtual void appendAtLeaf(BSONObjBuilder& builder) const {
+        BSONObjBuilder latencyBuilder;
+        appendGlobalHistogram(latencyBuilder);
+        builder.append("latency", latencyBuilder.obj());
+    }
+} globalHistogramServerStatusMetric;
+
+}  // namespace
+
 // Returns the inclusive lower bound of the bucket.
-long long getBucketMicros(int bucket) {
+uint64_t OperationLatencyHistogram::getBucketMicros(int bucket) {
     // TODO: I originally had a static array with the values, but clang-format put each on one line.
     // So I settled with this mess for now.
     if (bucket == 0) {
@@ -59,44 +71,32 @@ long long getBucketMicros(int bucket) {
     } else if (bucket < 31) {
         // Bucket 11 = 2^11, 12 = 2^11 + 2^10, 13 = 2^12,...
         int pow2 = ((bucket - 11) >> 1) + 11;
-        long long value = 1ll << pow2;
+        uint64_t value = 1ULL << pow2;
         // If even, add 2^(n-1).
         if ((bucket & 1) == 0) {
             value |= (value >> 1);
         }
         return value;
     } else {
-        return 1ll << (bucket - 10);
+        return 1ULL << (bucket - 10);
     }
 }
-
-class GlobalHistogramServerStatusMetric : public ServerStatusMetric {
-public:
-    GlobalHistogramServerStatusMetric() : ServerStatusMetric(".metrics.latency") {}
-    virtual void appendAtLeaf(BSONObjBuilder& b) const {
-        BSONObjBuilder latencyBuilder;
-        stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
-        globalHistogramStats.append(latencyBuilder);
-        b.append("latency", latencyBuilder.obj());
-    }
-} globalHistogramServerStatusMetric;
-
-}  // namespace
 
 void OperationLatencyHistogram::_append(const HistogramData& data,
                                         const std::string& key,
                                         BSONObjBuilder& builder) {
 
-    BSONObjBuilder histogramBuilder, arrayBuilder;
+    BSONObjBuilder histogramBuilder;
+    BSONArrayBuilder arrayBuilder(kMaxBuckets);
     for (int i = 0; i < kMaxBuckets; i++) {
         if (data.buckets[i] == 0)
             continue;
-        BSONObj entry = BSON("micros" << getBucketMicros(i) << "count"
-                                      << static_cast<long long>(data.buckets[i]));
-        arrayBuilder.append(std::to_string(i), entry);
+        BSONObj entry = BSON("micros" << static_cast<long long>(getBucketMicros(i))
+                        << "count" << static_cast<long long>(data.buckets[i]));
+        arrayBuilder.append(entry);
     }
 
-    histogramBuilder.appendArray("histogram", arrayBuilder.obj());
+    histogramBuilder.appendArray("histogram", arrayBuilder.arr());
     histogramBuilder.append("latency", static_cast<long long>(data.sum));
     histogramBuilder.append("ops", static_cast<long long>(data.entryCount));
     builder.append(key, histogramBuilder.obj());
@@ -181,6 +181,11 @@ void incrementGlobalHistogram(uint64_t latency, HistogramType type) {
     int bucket = OperationLatencyHistogram::getBucket(latency);
     stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
     globalHistogramStats.incrementBucket(latency, bucket, type);
+}
+
+void appendGlobalHistogram(BSONObjBuilder& builder) {
+    stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
+    globalHistogramStats.append(builder);
 }
 
 }  // namespace mongo
