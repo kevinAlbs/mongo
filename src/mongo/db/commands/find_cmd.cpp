@@ -104,6 +104,10 @@ public:
         return LogicalOp::opQuery;
     }
 
+    HistogramType getHistogramType() const {
+        return HistogramType::opRead;
+    }
+
     std::size_t reserveBytesForReply() const override {
         return FindCommon::kInitReplyBufferSize;
     }

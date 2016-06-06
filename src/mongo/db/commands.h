@@ -43,7 +43,9 @@
 #include "mongo/db/write_concern.h"
 #include "mongo/rpc/reply_builder_interface.h"
 #include "mongo/rpc/request_interface.h"
+#include "mongo/db/stats/operation_latency_histogram.h"
 #include "mongo/util/string_map.h"
+
 
 namespace mongo {
 
@@ -266,6 +268,10 @@ public:
 
     virtual LogicalOp getLogicalOp() const {
         return LogicalOp::opCommand;
+    }
+
+    virtual HistogramType getHistogramType() const {
+        return HistogramType::opCommand;
     }
 
 protected:

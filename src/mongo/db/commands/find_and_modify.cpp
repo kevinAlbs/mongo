@@ -226,6 +226,10 @@ public:
         find_and_modify::addPrivilegesRequiredForFindAndModify(this, dbname, cmdObj, out);
     }
 
+    HistogramType getHistogramType() const {
+        return HistogramType::opWrite;
+    }
+
     Status explain(OperationContext* txn,
                    const std::string& dbName,
                    const BSONObj& cmdObj,

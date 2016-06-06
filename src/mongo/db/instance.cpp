@@ -71,6 +71,7 @@
 #include "mongo/db/s/sharding_state.h"
 #include "mongo/db/service_context.h"
 #include "mongo/db/stats/counters.h"
+#include "mongo/db/stats/operation_latency_histogram.h"
 #include "mongo/db/storage/storage_engine.h"
 #include "mongo/db/storage/storage_options.h"
 #include "mongo/platform/atomic_word.h"
@@ -690,6 +691,20 @@ void assembleResponse(OperationContext* txn,
     debug.executionTime = currentOp.totalTimeMillis();
 
     logThreshold += currentOp.getExpectedLatencyMs();
+
+    if (c.isFromUserConnection()) {
+        // NOTE: Should not depend on logicalOp here since Command classes would need to be changed
+        // and also cases like findAndModify are iffy. See commands.h for getLogicalOp() and
+        // notice write_commands.cpp does not override these.
+
+        // NOTE: All commands are stored as global. I think this is what we want so we avoid
+        // histogram data changes when collection drops.
+
+        log() << "Logging command " << currentOp.getCommand()->getName();
+
+        incrementGlobalHistogram(currentOp.totalTimeMicros(),
+            currentOp.getCommand()->getHistogramType());
+    }
 
     if (shouldLogOpDebug || debug.executionTime > logThreshold) {
         Locker::LockerInfo lockerInfo;

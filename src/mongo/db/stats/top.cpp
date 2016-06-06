@@ -83,7 +83,6 @@ void Top::record(OperationContext* txn,
 
     auto hashedNs = UsageMap::HashedKey(ns);
 
-    // cout << "record: " << ns << "\t" << op << "\t" << command << endl;
     stdx::lock_guard<SimpleMutex> lk(_lock);
 
     if ((command || logicalOp == LogicalOp::opQuery) && ns == _lastDropped) {
@@ -100,8 +99,7 @@ void Top::_record(
     // Only update histograms if operation came from user.
     if (txn->getClient()->isFromUserConnection()) {
         int histogramBucket = OperationLatencyHistogram::getBucket(micros);
-        c.opLatencyHistogram.incrementBucket(histogramBucket, logicalOp);
-        globalHistogramStats.incrementBucket(histogramBucket, logicalOp);
+        c.opLatencyHistogram.incrementBucket(micros, histogramBucket, logicalOp);
     }
 
     c.total.inc(micros);
@@ -193,4 +191,5 @@ void Top::_appendStatsEntry(BSONObjBuilder& b, const char* statsName, const Usag
     bb.appendNumber("count", map.count);
     bb.done();
 }
+
 }

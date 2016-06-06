@@ -69,6 +69,10 @@ public:
         return true;
     }
 
+    HistogramType getHistogramType() const {
+        return HistogramType::opRead;
+    }
+
     virtual Status checkAuthForCommand(ClientBasic* client,
                                        const std::string& dbname,
                                        const BSONObj& cmdObj) {

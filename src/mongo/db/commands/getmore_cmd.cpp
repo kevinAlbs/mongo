@@ -102,6 +102,10 @@ public:
         return false;
     }
 
+    HistogramType getHistogramType() const {
+        return HistogramType::opRead;
+    }
+
     void help(std::stringstream& help) const override {
         help << "retrieve more results from an existing cursor";
     }

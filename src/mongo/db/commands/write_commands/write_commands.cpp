@@ -203,6 +203,10 @@ public:
         return true;
     }
 
+    HistogramType getHistogramType() const {
+        return HistogramType::opWrite;
+    }
+
     bool run(OperationContext* txn,
              const std::string& dbname,
              BSONObj& cmdObj,
