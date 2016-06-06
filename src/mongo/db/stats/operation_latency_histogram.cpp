@@ -28,37 +28,42 @@
 
 #define MONGO_LOG_DEFAULT_COMPONENT ::mongo::logger::LogComponent::kDefault
 
+#include "mongo/platform/basic.h"
+
 #include "mongo/db/stats/operation_latency_histogram.h"
 
 #include "mongo/db/namespace_string.h"
+#include "mongo/platform/bits.h"
 #include "mongo/util/log.h"
 #include "mongo/util/net/message.h"
 
 namespace mongo {
 
+// Computes the log base 2 of value, and checks for cases of split buckets.
 int OperationLatencyHistogram::getBucket(uint64_t value) {
-    // Compute the log base 2 on an integer value using bitshifting.
-    // For a slightly more complex improvement, consider
-    // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogLookup
-    uint64_t log2 = 0;
-    int shiftAmount = 32;
-
-    // 0 is special case. Mathematically this isn't defined, but we want bucket 0.
-    if (value == 0)
+    // Zero is a special case since log(0) is undefined.
+    if (value == 0) {
         return 0;
-
-    while (shiftAmount > 0) {
-        uint64_t temp = value >> shiftAmount;
-        if (temp > 0) {
-            log2 += shiftAmount;
-            value = temp;
-        }
-        // Divide shiftAmount by 2.
-        shiftAmount = shiftAmount >> 1;
     }
 
-    // TODO: consider the case of half splits. TBD after range is finalized.
-    return log2;
+    uint log2 = 63 - countLeadingZeros64(value);
+
+    // Half splits occur in range [2^11, 2^21) giving 10 extra buckets.
+    if (log2 < 11) {
+        return log2;
+    } else if (log2 < 21) {
+        uint extra = log2 - 11;
+        // Split value boundary is at (2^n + 2^(n+1))/2 = 2^n + 2^(n-1).
+        uint splitBoundary = 0b11 << (log2 - 1);
+        if (value >= splitBoundary) {
+            extra++;
+        }
+        return log2 + extra;
+    } else if (log2 < OperationLatencyHistogram::kMaxBuckets) {
+        return log2 + 10;
+    } else {
+        return OperationLatencyHistogram::kMaxBuckets - 1;
+    }
 }
 
 void OperationLatencyHistogram::incrementBucket(int bucket, LogicalOp op) {
@@ -67,26 +72,26 @@ void OperationLatencyHistogram::incrementBucket(int bucket, LogicalOp op) {
         case LogicalOp::opMsg:
         case LogicalOp::opQuery:
         case LogicalOp::opGetMore:
-        case LogicalOp::opKillCursors:
             log() << "Incrementing read";
-            _readBuckets[bucket].increment();
+            _readBuckets[bucket]++;
             break;
         case LogicalOp::opUpdate:
         case LogicalOp::opInsert:
         case LogicalOp::opDelete:
             log() << "Incrementing write";
-            _writeBuckets[bucket].increment();
+            _writeBuckets[bucket]++;
             break;
         case LogicalOp::opCommand:
             log() << "Incrementing command";
-            _commandBuckets[bucket].increment();
+            _commandBuckets[bucket]++;
             break;
+        case LogicalOp::opKillCursors:
         case LogicalOp::opInvalid:
             break;
         default:
             MONGO_UNREACHABLE;
     }
-    _numEntries.increment();
+    _numEntries++;
 }
 
 OperationLatencyHistogram globalHistogramStats;

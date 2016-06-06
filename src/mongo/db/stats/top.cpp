@@ -91,10 +91,6 @@ void Top::record(OperationContext* txn,
         return;
     }
 
-    if (_usage.find(hashedNs) == _usage.end()) {
-        _usage[hashedNs].opLatencyHistogram.reset(new OperationLatencyHistogram());
-    }
-
     CollectionData& coll = _usage[hashedNs];
     _record(txn, coll, logicalOp, lockType, micros);
 }
@@ -104,7 +100,7 @@ void Top::_record(
     // Only update histograms if operation came from user.
     if (txn->getClient()->isFromUserConnection()) {
         int histogramBucket = OperationLatencyHistogram::getBucket(micros);
-        c.opLatencyHistogram->incrementBucket(histogramBucket, logicalOp);
+        c.opLatencyHistogram.incrementBucket(histogramBucket, logicalOp);
         globalHistogramStats.incrementBucket(histogramBucket, logicalOp);
     }
 

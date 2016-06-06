@@ -27,8 +27,7 @@
  */
 #pragma once
 
-#include <iostream>
-#include <memory>
+#include <array>
 
 #include "mongo/base/counter.h"
 #include "mongo/base/string_data.h"
@@ -40,21 +39,18 @@ namespace mongo {
 
 class OperationLatencyHistogram {
 public:
-    static const int kMaxBuckets = 64;
+    static const int kMaxBuckets = 51;
     static int getBucket(uint64_t value);
 
-    OperationLatencyHistogram()
-        : _readBuckets(kMaxBuckets), _writeBuckets(kMaxBuckets), _commandBuckets(kMaxBuckets) {}
+    OperationLatencyHistogram() = default;
 
     void incrementBucket(int bucket, LogicalOp op);
 
 private:
-    // TODO: if we continue with current single lock implementation the Counter64 can be changed
-    // to a uint64_t.
-    std::vector<Counter64> _readBuckets;
-    std::vector<Counter64> _writeBuckets;
-    std::vector<Counter64> _commandBuckets;
-    Counter64 _numEntries;
+    std::array<uint64_t, kMaxBuckets> _readBuckets;
+    std::array<uint64_t, kMaxBuckets> _writeBuckets;
+    std::array<uint64_t, kMaxBuckets> _commandBuckets;
+    uint64_t _numEntries;
 };
 
 extern OperationLatencyHistogram globalHistogramStats;

@@ -81,7 +81,7 @@ public:
         UsageData update;
         UsageData remove;
         UsageData commands;
-        std::shared_ptr<OperationLatencyHistogram> opLatencyHistogram;
+        OperationLatencyHistogram opLatencyHistogram;
     };
 
     typedef StringMap<CollectionData> UsageMap;
