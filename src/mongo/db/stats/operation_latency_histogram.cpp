@@ -35,6 +35,7 @@
 #include <string>
 
 #include "mongo/db/namespace_string.h"
+#include "mongo/db/commands/server_status_metric.h"
 #include "mongo/platform/bits.h"
 #include "mongo/stdx/mutex.h"
 #include "mongo/util/log.h"
@@ -58,6 +59,18 @@ long long getBucketMicros(int bucket) {
     };
     return static_cast<long long>(bucketLowerBounds[bucket]);
 }
+
+class GlobalHistogramServerStatusMetric : public ServerStatusMetric {
+public:
+    GlobalHistogramServerStatusMetric() : ServerStatusMetric(".metrics.latency") {}
+    virtual void appendAtLeaf(BSONObjBuilder& b) const {
+        BSONObjBuilder latencyBuilder;
+        stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
+        globalHistogramStats.append(latencyBuilder);
+        b.append("latency", latencyBuilder.obj());
+    }
+
+} globalHistogramServerStatusMetric;
 
 } // namespace
 

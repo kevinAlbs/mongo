@@ -64,5 +64,6 @@ private:
 };
 
 void incrementGlobalHistogram(uint64_t latency, HistogramType op);
+void appendGlobalHistogram(BSONObjBuilder& builder);
 
 }  // namespace mongo
