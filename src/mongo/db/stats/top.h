@@ -96,6 +96,7 @@ public:
     void append(BSONObjBuilder& b);
     void cloneMap(UsageMap& out) const;
     void collectionDropped(StringData ns);
+    void appendHistogram(StringData ns, BSONObjBuilder& b);
 
 private:
     void _appendToUsageMap(BSONObjBuilder& b, const UsageMap& map) const;

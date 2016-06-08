@@ -325,6 +325,8 @@ public:
 
         virtual bool hasUniqueIdIndex(const NamespaceString& ns) const = 0;
 
+        virtual void appendHistogram(const NamespaceString& ns, BSONObjBuilder& builder) const = 0;
+
         // Add new methods as needed.
     };
 
@@ -1679,5 +1681,20 @@ private:
     // If we absorbed a $unwind that specified 'includeArrayIndex', this is used to populate that
     // field, tracking how many results we've returned so far for the current input document.
     long long _outputIndex;
+};
+
+class DocumentSourceCollStats : public DocumentSource, public DocumentSourceNeedsMongod {
+public:
+    DocumentSourceCollStats(const boost::intrusive_ptr<ExpressionContext>& pExpCtx) : DocumentSource(pExpCtx) {}
+    boost::optional<Document> getNext() final;
+    const char* getSourceName() const final;
+    bool isValidInitialSource() const final;
+    Value serialize(bool explain=false) const;
+
+    static boost::intrusive_ptr<DocumentSource> createFromBson(
+        BSONElement elem, const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
+private:
+    bool _latencySpecified = false;
+    bool _finished = false;
 };
 }
