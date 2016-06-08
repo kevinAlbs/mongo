@@ -38,7 +38,7 @@
 
 namespace mongo {
 
-enum class HistogramType {opCommand, opRead, opWrite};
+enum class HistogramType { opCommand, opRead, opWrite };
 
 class OperationLatencyHistogram {
 public:

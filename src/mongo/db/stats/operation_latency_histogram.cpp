@@ -35,8 +35,8 @@
 #include <algorithm>
 #include <string>
 
-#include "mongo/db/namespace_string.h"
 #include "mongo/db/commands/server_status_metric.h"
+#include "mongo/db/namespace_string.h"
 #include "mongo/platform/bits.h"
 #include "mongo/stdx/mutex.h"
 #include "mongo/util/log.h"
@@ -50,15 +50,24 @@ stdx::mutex globalHistogramLock;
 
 // Returns the inclusive lower bound of the bucket.
 long long getBucketMicros(int bucket) {
-    static uint64_t bucketLowerBounds[] = {
-        0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 3072, 4096, 6144, 8192, 12288,
-        16384, 24576, 32768, 49152, 65536, 98304, 131072, 196608, 262144, 393216, 524288,
-        786432, 1048576, 1572864, 2097152, 4194304, 8388608, 16777216, 33554432, 67108864,
-        134217728, 268435456, 536870912, 1073741824, 2147483648, 4294967296, 8589934592,
-        17179869184, 34359738368, 68719476736, 137438953472, 274877906944, 549755813888,
-        1099511627776
-    };
-    return static_cast<long long>(bucketLowerBounds[bucket]);
+    // TODO: I originally had a static array with the values, but clang-format put each on one line.
+    // So I settled with this mess for now.
+    if (bucket == 0) {
+        return 0;
+    } else if (bucket < 11) {
+        return 1 << bucket;
+    } else if (bucket < 31) {
+        // Bucket 11 = 2^11, 12 = 2^11 + 2^10, 13 = 2^12,...
+        int pow2 = ((bucket - 11) >> 1) + 11;
+        long long value = 1ll << pow2;
+        // If even, add 2^(n-1).
+        if ((bucket & 1) == 0) {
+            value |= (value >> 1);
+        }
+        return value;
+    } else {
+        return 1ll << (bucket - 10);
+    }
 }
 
 class GlobalHistogramServerStatusMetric : public ServerStatusMetric {
@@ -72,17 +81,18 @@ public:
     }
 } globalHistogramServerStatusMetric;
 
-} // namespace
+}  // namespace
 
 void OperationLatencyHistogram::_append(const HistogramData& data,
-    const std::string& key,
-    BSONObjBuilder& builder) {
+                                        const std::string& key,
+                                        BSONObjBuilder& builder) {
 
     BSONObjBuilder histogramBuilder, arrayBuilder;
     for (int i = 0; i < kMaxBuckets; i++) {
-        if (data.buckets[i] == 0) continue;
-        BSONObj entry = BSON("micros" << getBucketMicros(i)
-            << "count" << static_cast<long long>(data.buckets[i]));
+        if (data.buckets[i] == 0)
+            continue;
+        BSONObj entry = BSON("micros" << getBucketMicros(i) << "count"
+                                      << static_cast<long long>(data.buckets[i]));
         arrayBuilder.append(std::to_string(i), entry);
     }
 
