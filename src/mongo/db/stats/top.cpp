@@ -192,4 +192,12 @@ void Top::_appendStatsEntry(BSONObjBuilder& b, const char* statsName, const Usag
     bb.done();
 }
 
+void Top::appendHistogram(StringData ns, BSONObjBuilder& b) {
+    auto hashedNs = UsageMap::HashedKey(ns);
+    stdx::lock_guard<SimpleMutex> lk(_lock);
+    BSONObjBuilder bb;
+    _usage[hashedNs].opLatencyHistogram.append(bb);
+    b.append("latencyStats", bb.obj());
+}
+
 }

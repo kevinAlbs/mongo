@@ -31,6 +31,7 @@
 
 #include "mongo/base/counter.h"
 #include "mongo/base/string_data.h"
+#include "mongo/db/jsobj.h"
 #include "mongo/stdx/mutex.h"
 #include "mongo/util/net/message.h"
 #include "mongo/util/string_map.h"
@@ -48,6 +49,7 @@ public:
 
     void incrementBucket(uint64_t latency, int bucket, HistogramType op);
     void incrementBucket(uint64_t latency, int bucket, LogicalOp logicalOp);
+    void append(BSONObjBuilder& bb);
 
 private:
     typedef struct {
@@ -56,7 +58,8 @@ private:
         uint64_t sum;
     } HistogramData;
 
-    void incrementData(uint64_t latency, int bucket, HistogramData& data);
+    void _append(const HistogramData& data, const std::string& key, BSONObjBuilder& bb);
+    void _incrementData(uint64_t latency, int bucket, HistogramData& data);
     HistogramData _reads, _writes, _commands;
 };
 
