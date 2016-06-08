@@ -50,13 +50,14 @@ public:
     void incrementBucket(uint64_t latency, int bucket, LogicalOp logicalOp);
 
 private:
-    typedef std::array<uint64_t, kMaxBuckets> BucketArr;
+    typedef struct {
+        std::array<uint64_t, kMaxBuckets> buckets;
+        uint64_t entryCount;
+        uint64_t sum;
+    } HistogramData;
 
-    BucketArr _readBuckets;
-    BucketArr _writeBuckets;
-    BucketArr _commandBuckets;
-    uint64_t _numReads, _numWrites, _numCommands;
-    uint64_t _timeReads, _timeWrites, _timeCommands;
+    void incrementData(uint64_t latency, int bucket, HistogramData& data);
+    HistogramData _reads, _writes, _commands;
 };
 
 void incrementGlobalHistogram(uint64_t latency, HistogramType op);

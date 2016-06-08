@@ -73,22 +73,22 @@ int OperationLatencyHistogram::getBucket(uint64_t value) {
     }
 }
 
+void OperationLatencyHistogram::incrementData(uint64_t latency, int bucket, HistogramData& data) {
+    data.buckets[bucket]++;
+    data.entryCount++;
+    data.sum += latency;
+}
+
 void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, HistogramType op) {
     switch (op) {
         case HistogramType::opRead:
-            _readBuckets[bucket]++;
-            _numReads++;
-            _timeReads += latency;
+            incrementData(latency, bucket, _reads);
             break;
         case HistogramType::opWrite:
-            _writeBuckets[bucket]++;
-            _numWrites++;
-            _timeWrites += latency;
+            incrementData(latency, bucket, _writes);
             break;
         case HistogramType::opCommand:
-            _commandBuckets[bucket]++;
-            _numCommands++;
-            _timeCommands += latency;
+            incrementData(latency, bucket, _commands);
             break;
         default:
             MONGO_UNREACHABLE;
@@ -97,17 +97,17 @@ void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, Hi
 
 void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, LogicalOp logicalOp) {
     switch (logicalOp) {
+        case LogicalOp::opQuery:
+        case LogicalOp::opGetMore:
+            incrementData(latency, bucket, _reads);
+            break;
         case LogicalOp::opUpdate:
         case LogicalOp::opInsert:
         case LogicalOp::opDelete:
-            incrementBucket(latency, bucket, HistogramType::opWrite);
-            break;
-        case LogicalOp::opQuery:
-        case LogicalOp::opGetMore:
-            incrementBucket(latency, bucket, HistogramType::opRead);
+            incrementData(latency, bucket, _writes);
             break;
         case LogicalOp::opCommand:
-            incrementBucket(latency, bucket, HistogramType::opCommand);
+            incrementData(latency, bucket, _commands);
             break;
         case LogicalOp::opKillCursors:
         case LogicalOp::opInvalid:
