@@ -32,6 +32,7 @@
 
 #include "mongo/db/stats/operation_latency_histogram.h"
 
+#include <algorithm>
 #include <string>
 
 #include "mongo/db/namespace_string.h"
@@ -107,23 +108,21 @@ int OperationLatencyHistogram::getBucket(uint64_t value) {
         return 0;
     }
 
-    uint log2 = 63 - countLeadingZeros64(value);
-
+    int log2 = 63 - countLeadingZeros64(value);
     // Half splits occur in range [2^11, 2^21) giving 10 extra buckets.
     if (log2 < 11) {
         return log2;
     } else if (log2 < 21) {
-        uint extra = log2 - 11;
+        int extra = log2 - 11;
         // Split value boundary is at (2^n + 2^(n+1))/2 = 2^n + 2^(n-1).
-        uint splitBoundary = 0b11 << (log2 - 1);
+        uint64_t splitBoundary = 0b11 << (log2 - 1);
         if (value >= splitBoundary) {
             extra++;
         }
         return log2 + extra;
-    } else if (log2 < kMaxBuckets) {
-        return log2 + 10;
     } else {
-        return kMaxBuckets - 1;
+        // Add all of the extra 10 buckets.
+        return std::min(log2 + 10, kMaxBuckets - 1);
     }
 }
 
