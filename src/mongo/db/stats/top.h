@@ -30,7 +30,6 @@
 #pragma once
 
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <memory>
 
 #include "mongo/db/operation_context.h"
 #include "mongo/db/stats/operation_latency_histogram.h"

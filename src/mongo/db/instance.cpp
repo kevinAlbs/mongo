@@ -693,14 +693,8 @@ void assembleResponse(OperationContext* txn,
     logThreshold += currentOp.getExpectedLatencyMs();
 
     if (c.isFromUserConnection()) {
-        // NOTE: Should not depend on logicalOp here since Command classes would need to be changed
-        // and also cases like findAndModify are iffy. See commands.h for getLogicalOp() and
-        // notice write_commands.cpp does not override these.
-
-        // NOTE: All commands are stored as global. I think this is what we want so we avoid
-        // histogram data changes when collection drops.
-
-        log() << "Logging command " << currentOp.getCommand()->getName();
+        log() << "Incrementing global histogram with command "
+            << currentOp.getCommand()->getName();
 
         incrementGlobalHistogram(currentOp.totalTimeMicros(),
             currentOp.getCommand()->getHistogramType());

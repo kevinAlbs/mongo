@@ -70,7 +70,6 @@ public:
         globalHistogramStats.append(latencyBuilder);
         b.append("latency", latencyBuilder.obj());
     }
-
 } globalHistogramServerStatusMetric;
 
 } // namespace
@@ -80,7 +79,7 @@ void OperationLatencyHistogram::_append(const HistogramData& data,
     BSONObjBuilder& builder) {
 
     BSONObjBuilder histogramBuilder, arrayBuilder;
-    for (uint i = 0; i < kMaxBuckets; i++) {
+    for (int i = 0; i < kMaxBuckets; i++) {
         if (data.buckets[i] == 0) continue;
         BSONObj entry = BSON("micros" << getBucketMicros(i)
             << "count" << static_cast<long long>(data.buckets[i]));
@@ -88,10 +87,8 @@ void OperationLatencyHistogram::_append(const HistogramData& data,
     }
 
     histogramBuilder.appendArray("histogram", arrayBuilder.obj());
-    histogramBuilder.append("latency",
-        static_cast<long long>(data.sum));
-    histogramBuilder.append("ops",
-        static_cast<long long>(data.entryCount));
+    histogramBuilder.append("latency", static_cast<long long>(data.sum));
+    histogramBuilder.append("ops", static_cast<long long>(data.entryCount));
     builder.append(key, histogramBuilder.obj());
 }
 
@@ -132,8 +129,8 @@ void OperationLatencyHistogram::_incrementData(uint64_t latency, int bucket, His
     data.sum += latency;
 }
 
-void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, HistogramType op) {
-    switch (op) {
+void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, HistogramType type) {
+    switch (type) {
         case HistogramType::opRead:
             _incrementData(latency, bucket, _reads);
             break;
@@ -148,8 +145,8 @@ void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, Hi
     }
 }
 
-void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, LogicalOp logicalOp) {
-    switch (logicalOp) {
+void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, LogicalOp op) {
+    switch (op) {
         case LogicalOp::opQuery:
         case LogicalOp::opGetMore:
             _incrementData(latency, bucket, _reads);
@@ -170,12 +167,10 @@ void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, Lo
     }
 }
 
-void incrementGlobalHistogram(uint64_t latency, HistogramType op) {
-    log() << "Incrementing global histogram";
+void incrementGlobalHistogram(uint64_t latency, HistogramType type) {
     int bucket = OperationLatencyHistogram::getBucket(latency);
     stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
-    globalHistogramStats.incrementBucket(latency, bucket, op);
+    globalHistogramStats.incrementBucket(latency, bucket, type);
 }
-
 
 }  // namespace mongo

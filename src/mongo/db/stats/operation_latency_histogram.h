@@ -47,8 +47,8 @@ public:
 
     OperationLatencyHistogram() = default;
 
-    void incrementBucket(uint64_t latency, int bucket, HistogramType op);
-    void incrementBucket(uint64_t latency, int bucket, LogicalOp logicalOp);
+    void incrementBucket(uint64_t latency, int bucket, HistogramType type);
+    void incrementBucket(uint64_t latency, int bucket, LogicalOp op);
     void append(BSONObjBuilder& bb);
 
 private:
@@ -63,7 +63,7 @@ private:
     HistogramData _reads, _writes, _commands;
 };
 
-void incrementGlobalHistogram(uint64_t latency, HistogramType op);
+void incrementGlobalHistogram(uint64_t latency, HistogramType type);
 void appendGlobalHistogram(BSONObjBuilder& builder);
 
 }  // namespace mongo
