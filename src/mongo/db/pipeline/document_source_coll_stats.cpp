@@ -28,9 +28,9 @@
 
 #include "mongo/platform/basic.h"
 
+#include "mongo/bson/bsonobj.h"
 #include "mongo/db/pipeline/document_source.h"
 #include "mongo/db/stats/top.h"
-#include "mongo/bson/bsonobj.h"
 
 using boost::intrusive_ptr;
 
@@ -44,7 +44,9 @@ const char* DocumentSourceCollStats::getSourceName() const {
 
 intrusive_ptr<DocumentSource> DocumentSourceCollStats::createFromBson(
     BSONElement specElem, const intrusive_ptr<ExpressionContext>& pExpCtx) {
-    uassert(40141, "the collStats filter must be an expression in an object", specElem.type() == Object);
+    uassert(40141,
+            "the collStats filter must be an expression in an object",
+            specElem.type() == Object);
     intrusive_ptr<DocumentSourceCollStats> collStats(new DocumentSourceCollStats(pExpCtx));
 
     for (const auto& elem : specElem.embeddedObject()) {
@@ -85,4 +87,4 @@ Value DocumentSourceCollStats::serialize(bool explain) const {
     return Value(DOC(getSourceName() << Document()));
 }
 
-} // namespace mongo
+}  // namespace mongo

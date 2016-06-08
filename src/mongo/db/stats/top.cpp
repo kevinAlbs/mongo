@@ -204,5 +204,4 @@ void Top::appendHistogram(StringData ns, BSONObjBuilder& b) {
     _usage[hashedNs].opLatencyHistogram.append(bb);
     b.append("latencyStats", bb.obj());
 }
-
 }

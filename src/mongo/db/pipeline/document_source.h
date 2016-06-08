@@ -1696,14 +1696,16 @@ private:
 
 class DocumentSourceCollStats : public DocumentSource, public DocumentSourceNeedsMongod {
 public:
-    DocumentSourceCollStats(const boost::intrusive_ptr<ExpressionContext>& pExpCtx) : DocumentSource(pExpCtx) {}
+    DocumentSourceCollStats(const boost::intrusive_ptr<ExpressionContext>& pExpCtx)
+        : DocumentSource(pExpCtx) {}
     boost::optional<Document> getNext() final;
     const char* getSourceName() const final;
     bool isValidInitialSource() const final;
-    Value serialize(bool explain=false) const;
+    Value serialize(bool explain = false) const;
 
     static boost::intrusive_ptr<DocumentSource> createFromBson(
         BSONElement elem, const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
+
 private:
     bool _latencySpecified = false;
     bool _finished = false;

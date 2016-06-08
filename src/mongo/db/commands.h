@@ -40,10 +40,10 @@
 #include "mongo/db/commands/server_status_metric.h"
 #include "mongo/db/jsobj.h"
 #include "mongo/db/query/explain.h"
+#include "mongo/db/stats/operation_latency_histogram.h"
 #include "mongo/db/write_concern.h"
 #include "mongo/rpc/reply_builder_interface.h"
 #include "mongo/rpc/request_interface.h"
-#include "mongo/db/stats/operation_latency_histogram.h"
 #include "mongo/util/string_map.h"
 
 
