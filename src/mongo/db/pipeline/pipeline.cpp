@@ -35,6 +35,7 @@
 #include "mongo/db/auth/action_set.h"
 #include "mongo/db/auth/authorization_session.h"
 #include "mongo/db/auth/privilege.h"
+#include "mongo/db/bson/dotted_path_support.h"
 #include "mongo/db/catalog/document_validation.h"
 #include "mongo/db/commands.h"
 #include "mongo/db/jsobj.h"
@@ -56,6 +57,8 @@ using std::endl;
 using std::ostringstream;
 using std::string;
 using std::vector;
+
+namespace dps = ::mongo::dotted_path_support;
 
 const char Pipeline::commandName[] = "aggregate";
 const char Pipeline::pipelineName[] = "pipeline";
@@ -86,7 +89,7 @@ intrusive_ptr<Pipeline> Pipeline::parseCommand(string& errmsg,
         }
 
         // maxTimeMS is also for the command processor.
-        if (str::equals(pFieldName, LiteParsedQuery::cmdOptionMaxTimeMS)) {
+        if (str::equals(pFieldName, QueryRequest::cmdOptionMaxTimeMS)) {
             continue;
         }
 
@@ -234,10 +237,14 @@ Status Pipeline::checkAuthForCommand(ClientBasic* client,
 
     std::vector<Privilege> privileges;
 
-    if (cmdObj.getFieldDotted("pipeline.0.$indexStats")) {
+    if (dps::extractElementAtPath(cmdObj, "pipeline.0.$indexStats")) {
         Privilege::addPrivilegeToPrivilegeVector(
             &privileges,
             Privilege(ResourcePattern::forAnyNormalResource(), ActionType::indexStats));
+    } else if (dps::extractElementAtPath(cmdObj, "pipeline.0.$collStats")) {
+        Privilege::addPrivilegeToPrivilegeVector(
+            &privileges,
+            Priviledge(ResourcePattern::forAnyNormalResource(), ActionType::collStats));
     } else {
         // If no source requiring an alternative permission scheme is specified then default to
         // requiring find() privileges on the given namespace.
