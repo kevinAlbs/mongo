@@ -102,7 +102,7 @@ void Top::_record(
         // TODO: I would prefer to obtain the HistogramType here for consistency
         // with the global histogram. But commands like update/remove push a new
         // curop onto the stack, so we cannot retrieve the Command object from curop.
-        log() << "Incrementing collection histogram with op" << logicalOpToString(logicalOp);
+        // log() << "Incrementing collection histogram with op" << logicalOpToString(logicalOp);
         int histogramBucket = OperationLatencyHistogram::getBucket(micros);
         c.opLatencyHistogram.incrementBucket(micros, histogramBucket, logicalOp);
     }
