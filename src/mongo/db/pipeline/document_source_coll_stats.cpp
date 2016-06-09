@@ -44,7 +44,7 @@ const char* DocumentSourceCollStats::getSourceName() const {
 
 intrusive_ptr<DocumentSource> DocumentSourceCollStats::createFromBson(
     BSONElement specElem, const intrusive_ptr<ExpressionContext>& pExpCtx) {
-    uassert(40141,
+    uassert(40144,
             "the collStats filter must be an expression in an object",
             specElem.type() == Object);
     intrusive_ptr<DocumentSourceCollStats> collStats(new DocumentSourceCollStats(pExpCtx));
@@ -53,10 +53,10 @@ intrusive_ptr<DocumentSource> DocumentSourceCollStats::createFromBson(
         StringData fieldName = elem.fieldNameStringData();
 
         if (fieldName == "latencyStats") {
-            uassert(40142, "latencyStats argument must be an object", elem.type() == Object);
+            uassert(40145, "latencyStats argument must be an object", elem.type() == Object);
             collStats->_latencySpecified = true;
         } else {
-            uasserted(40143, str::stream() << "unrecognized option to $collStats: " << fieldName);
+            uasserted(40146, str::stream() << "unrecognized option to $collStats: " << fieldName);
         }
     }
 
