@@ -694,9 +694,10 @@ void assembleResponse(OperationContext* txn,
 
     if (c.isFromUserConnection()) {
         // log() << "Incrementing global histogram with command " << currentOp.getCommand()->getName();
-
-        incrementGlobalHistogram(currentOp.totalTimeMicros(),
-                                 currentOp.getCommand()->getHistogramType());
+        Command* cmd = currentOp.getCommand();
+        if (cmd) {
+            incrementGlobalHistogram(currentOp.totalTimeMicros(), cmd->getHistogramType());
+        }
     }
 
     if (shouldLogOpDebug || debug.executionTime > logThreshold) {
