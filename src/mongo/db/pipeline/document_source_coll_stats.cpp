@@ -28,8 +28,9 @@
 
 #include "mongo/platform/basic.h"
 
-#include "mongo/bson/bsonobj.h"
 #include "mongo/db/pipeline/document_source.h"
+
+#include "mongo/bson/bsonobj.h"
 #include "mongo/db/stats/top.h"
 
 using boost::intrusive_ptr;

@@ -60,26 +60,15 @@ public:
 
 }  // namespace
 
-// Returns the inclusive lower bound of the bucket.
-uint64_t OperationLatencyHistogram::getBucketMicros(int bucket) {
-    // TODO: I originally had a static array with the values, but clang-format put each on one line.
-    // So I settled with this mess for now.
-    if (bucket == 0) {
-        return 0;
-    } else if (bucket < 11) {
-        return 1 << bucket;
-    } else if (bucket < 31) {
-        // Bucket 11 = 2^11, 12 = 2^11 + 2^10, 13 = 2^12,...
-        int pow2 = ((bucket - 11) >> 1) + 11;
-        uint64_t value = 1ULL << pow2;
-        // If even, add 2^(n-1).
-        if ((bucket & 1) == 0) {
-            value |= (value >> 1);
-        }
-        return value;
-    } else {
-        return 1ULL << (bucket - 10);
-    }
+void incrementGlobalHistogram(uint64_t latency, HistogramType type) {
+    int bucket = OperationLatencyHistogram::getBucket(latency);
+    stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
+    globalHistogramStats.incrementBucket(latency, bucket, type);
+}
+
+void appendGlobalHistogram(BSONObjBuilder& builder) {
+    stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
+    globalHistogramStats.append(builder);
 }
 
 void OperationLatencyHistogram::_append(const HistogramData& data,
@@ -122,7 +111,9 @@ int OperationLatencyHistogram::getBucket(uint64_t value) {
     } else if (log2 < 21) {
         int extra = log2 - 11;
         // Split value boundary is at (2^n + 2^(n+1))/2 = 2^n + 2^(n-1).
-        uint64_t splitBoundary = 0b11 << (log2 - 1);
+        // Which corresponds to (1ULL << log2) | (1ULL << (log2 - 1))
+        // Which is equivalent to the following:
+        uint64_t splitBoundary = 3ULL < (log2 - 1);
         if (value >= splitBoundary) {
             extra++;
         }
@@ -177,15 +168,60 @@ void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, Lo
     }
 }
 
-void incrementGlobalHistogram(uint64_t latency, HistogramType type) {
-    int bucket = OperationLatencyHistogram::getBucket(latency);
-    stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
-    globalHistogramStats.incrementBucket(latency, bucket, type);
-}
-
-void appendGlobalHistogram(BSONObjBuilder& builder) {
-    stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
-    globalHistogramStats.append(builder);
+// Returns the inclusive lower bound of the bucket.
+uint64_t OperationLatencyHistogram::getBucketMicros(int bucket) {
+    static uint64_t lowerBounds = {0, 2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        3072,
+        4096,
+        6144,
+        8192,
+        12288,
+        16384,
+        24576,
+        32768,
+        49152,
+        65536,
+        98304,
+        131072,
+        196608,
+        262144,
+        393216,
+        524288,
+        786432,
+        1048576,
+        1572864,
+        2097152,
+        4194304,
+        8388608,
+        16777216,
+        33554432,
+        67108864,
+        134217728,
+        268435456,
+        536870912,
+        1073741824,
+        2147483648,
+        4294967296,
+        8589934592,
+        17179869184,
+        34359738368,
+        68719476736,
+        137438953472,
+        274877906944,
+        549755813888,
+        1099511627776
+    }
+    return lowerBounds[bucket];
 }
 
 }  // namespace mongo
