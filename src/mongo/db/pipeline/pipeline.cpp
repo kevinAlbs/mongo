@@ -243,8 +243,7 @@ Status Pipeline::checkAuthForCommand(ClientBasic* client,
             Privilege(ResourcePattern::forAnyNormalResource(), ActionType::indexStats));
     } else if (dps::extractElementAtPath(cmdObj, "pipeline.0.$collStats")) {
         Privilege::addPrivilegeToPrivilegeVector(
-            &privileges,
-            Privilege(ResourcePattern::forAnyNormalResource(), ActionType::collStats));
+            &privileges, Privilege(ResourcePattern::forAnyNormalResource(), ActionType::collStats));
     } else {
         // If no source requiring an alternative permission scheme is specified then default to
         // requiring find() privileges on the given namespace.

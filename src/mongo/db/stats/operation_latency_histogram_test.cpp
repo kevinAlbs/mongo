@@ -41,7 +41,7 @@
 namespace mongo {
 
 namespace {
-    int nBuckets = OperationLatencyHistogram::kMaxBuckets;
+int nBuckets = OperationLatencyHistogram::kMaxBuckets;
 }  // namespace
 
 TEST(OperationLatencyHistogramTest, BucketComp) {
@@ -49,13 +49,13 @@ TEST(OperationLatencyHistogramTest, BucketComp) {
         uint64_t boundary = OperationLatencyHistogram::getBucketMicros(i);
         ASSERT_EQUALS(OperationLatencyHistogram::getBucket(boundary), i);
         // Check that the next/previous latency values are handled correctly.
-        ASSERT_EQUALS(OperationLatencyHistogram::getBucket(boundary+1), i);
+        ASSERT_EQUALS(OperationLatencyHistogram::getBucket(boundary + 1), i);
         if (i > 0) {
-            ASSERT_EQUALS(OperationLatencyHistogram::getBucket(boundary-1), i-1);
+            ASSERT_EQUALS(OperationLatencyHistogram::getBucket(boundary - 1), i - 1);
         }
     }
     uint64_t maxValue = std::numeric_limits<uint64_t>::max();
-    ASSERT_EQUALS(OperationLatencyHistogram::getBucket(maxValue), nBuckets-1);
+    ASSERT_EQUALS(OperationLatencyHistogram::getBucket(maxValue), nBuckets - 1);
 }
 
 
@@ -93,4 +93,4 @@ TEST(OperationLatencyHistogram, GlobalIncrement) {
     ASSERT_GTE(out["commands"]["ops"].Long(), nBuckets);
 }
 
-} // namespace mongo
+}  // namespace mongo

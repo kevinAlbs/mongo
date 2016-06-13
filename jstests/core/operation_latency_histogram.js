@@ -59,7 +59,7 @@ for (var i = 0; i < numRecords / 2; i++) {
 checkHistogramDiff(numRecords, 0, 0);
 
 // KillCursors
-// The last cursor has no results, hence does not need to be closed.
+// The last cursor has no additional results, hence does not need to be closed.
 for (var i = 0; i < numRecords - 1; i++) {
     cursors[i].close();
 }
@@ -93,7 +93,7 @@ for (var i = 0; i < numRecords; i++) {
 checkHistogramDiff(0, 0, numRecords);
 
 // Group
-testColl.group({initial: {}, reduce: function(){}, key: {a: 1}});
+testColl.group({initial: {}, reduce: function() {}, key: {a: 1}});
 // Note: design doc says read, but it is counted as command.
 checkHistogramDiff(0, 0, 1);
 
@@ -103,7 +103,7 @@ testDB.runCommand({parallelCollectionScan: testColl.getName(), numCursors: 5});
 checkHistogramDiff(0, 0, 1);
 
 // FindAndModify
-testColl.findAndModify({query: {}, update: {pt: {type: "point", coordinates: [0,0]}}});
+testColl.findAndModify({query: {}, update: {pt: {type: "point", coordinates: [0, 0]}}});
 // Note: design doc says write, but it is not counted.
 checkHistogramDiff(0, 0, 0);
 
@@ -113,7 +113,7 @@ testColl.createIndex({pt: "2dsphere"});
 checkHistogramDiff(0, 0, 0);
 
 // GeoNear
-testDB.runCommand({geoNear: testColl.getName(), near: {type: "point", coordinates: [0,0]}});
+testDB.runCommand({geoNear: testColl.getName(), near: {type: "point", coordinates: [0, 0]}});
 // Note: design doc says read, but this is counted as command.
 checkHistogramDiff(0, 0, 1);
 
@@ -166,10 +166,9 @@ testColl.runCommand("IHopeNobodyEverMakesThisACommand");
 checkHistogramDiff(0, 0, 0);
 
 // Test aggregation command syntax.
-var commandResult = testDB.runCommand({aggregate: testColl.getName(), 
-    pipeline: [{$collStats: {latencyStats: {}}}]});
+var commandResult = testDB.runCommand(
+    {aggregate: testColl.getName(), pipeline: [{$collStats: {latencyStats: {}}}]});
 assert.commandWorked(commandResult, "Aggregation command failed");
 
-commandResult = testDB.runCommand({aggregate: testColl.getName(), 
-    pipeline: [{$collStats: true}]});
+commandResult = testDB.runCommand({aggregate: testColl.getName(), pipeline: [{$collStats: true}]});
 assert.commandFailed(commandResult);

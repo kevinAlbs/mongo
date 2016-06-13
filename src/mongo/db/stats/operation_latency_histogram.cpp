@@ -80,8 +80,8 @@ void OperationLatencyHistogram::_append(const HistogramData& data,
     for (int i = 0; i < kMaxBuckets; i++) {
         if (data.buckets[i] == 0)
             continue;
-        BSONObj entry = BSON("micros" << static_cast<long long>(getBucketMicros(i))
-                        << "count" << static_cast<long long>(data.buckets[i]));
+        BSONObj entry = BSON("micros" << static_cast<long long>(getBucketMicros(i)) << "count"
+                                      << static_cast<long long>(data.buckets[i]));
         arrayBuilder.append(entry);
     }
 
@@ -113,7 +113,7 @@ int OperationLatencyHistogram::getBucket(uint64_t value) {
         // Split value boundary is at (2^n + 2^(n+1))/2 = 2^n + 2^(n-1).
         // Which corresponds to (1ULL << log2) | (1ULL << (log2 - 1))
         // Which is equivalent to the following:
-        uint64_t splitBoundary = 3ULL < (log2 - 1);
+        uint64_t splitBoundary = 3ULL << (log2 - 1);
         if (value >= splitBoundary) {
             extra++;
         }
@@ -170,57 +170,57 @@ void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, Lo
 
 // Returns the inclusive lower bound of the bucket.
 uint64_t OperationLatencyHistogram::getBucketMicros(int bucket) {
-    static uint64_t lowerBounds = {0, 2,
-        4,
-        8,
-        16,
-        32,
-        64,
-        128,
-        256,
-        512,
-        1024,
-        2048,
-        3072,
-        4096,
-        6144,
-        8192,
-        12288,
-        16384,
-        24576,
-        32768,
-        49152,
-        65536,
-        98304,
-        131072,
-        196608,
-        262144,
-        393216,
-        524288,
-        786432,
-        1048576,
-        1572864,
-        2097152,
-        4194304,
-        8388608,
-        16777216,
-        33554432,
-        67108864,
-        134217728,
-        268435456,
-        536870912,
-        1073741824,
-        2147483648,
-        4294967296,
-        8589934592,
-        17179869184,
-        34359738368,
-        68719476736,
-        137438953472,
-        274877906944,
-        549755813888,
-        1099511627776
-    }
+    static uint64_t lowerBounds[] = {0,
+                                     2,
+                                     4,
+                                     8,
+                                     16,
+                                     32,
+                                     64,
+                                     128,
+                                     256,
+                                     512,
+                                     1024,
+                                     2048,
+                                     3072,
+                                     4096,
+                                     6144,
+                                     8192,
+                                     12288,
+                                     16384,
+                                     24576,
+                                     32768,
+                                     49152,
+                                     65536,
+                                     98304,
+                                     131072,
+                                     196608,
+                                     262144,
+                                     393216,
+                                     524288,
+                                     786432,
+                                     1048576,
+                                     1572864,
+                                     2097152,
+                                     4194304,
+                                     8388608,
+                                     16777216,
+                                     33554432,
+                                     67108864,
+                                     134217728,
+                                     268435456,
+                                     536870912,
+                                     1073741824,
+                                     2147483648,
+                                     4294967296,
+                                     8589934592,
+                                     17179869184,
+                                     34359738368,
+                                     68719476736,
+                                     137438953472,
+                                     274877906944,
+                                     549755813888,
+                                     1099511627776};
     return lowerBounds[bucket];
 }
 

@@ -58,7 +58,7 @@ for (var i = 0; i < numRecords / 2; i++) {
 checkHistogramDiff(numRecords, 0, 0);
 
 // KillCursors
-// The last cursor has no results, hence does not need to be closed.
+// The last cursor has no additional results, hence does not need to be closed.
 for (var i = 0; i < numRecords - 1; i++) {
     cursors[i].close();
 }
@@ -89,7 +89,7 @@ for (var i = 0; i < numRecords; i++) {
 checkHistogramDiff(numRecords, 0, 0);
 
 // Group
-testColl.group({initial: {}, reduce: function(){}, key: {a: 1}});
+testColl.group({initial: {}, reduce: function() {}, key: {a: 1}});
 checkHistogramDiff(1, 0, 0);
 
 // ParallelCollectionScan
@@ -97,7 +97,7 @@ testDB.runCommand({parallelCollectionScan: testColl.getName(), numCursors: 5});
 checkHistogramDiff(1, 0, 0);
 
 // FindAndModify
-testColl.findAndModify({query: {}, update: {pt: {type: "point", coordinates: [0,0]}}});
+testColl.findAndModify({query: {}, update: {pt: {type: "point", coordinates: [0, 0]}}});
 checkHistogramDiff(0, 1, 0);
 
 // CreateIndex
@@ -105,7 +105,7 @@ testColl.createIndex({pt: "2dsphere"});
 checkHistogramDiff(0, 0, 1);
 
 // GeoNear
-testDB.runCommand({geoNear: testColl.getName(), near: {type: "point", coordinates: [0,0]}});
+testDB.runCommand({geoNear: testColl.getName(), near: {type: "point", coordinates: [0, 0]}});
 checkHistogramDiff(1, 0, 0);
 
 // ListIndexes
