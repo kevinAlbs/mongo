@@ -32,6 +32,7 @@
 
 #include "mongo/bson/bsonobj.h"
 #include "mongo/db/stats/top.h"
+#include "mongo/util/time_support.h"
 
 using boost::intrusive_ptr;
 
@@ -73,6 +74,7 @@ boost::optional<Document> DocumentSourceCollStats::getNext() {
 
     BSONObjBuilder builder;
 
+    builder.appendDate("localTime", jsTime());
     if (_latencySpecified) {
         _mongod->appendHistogram(pExpCtx->ns, builder);
     }
