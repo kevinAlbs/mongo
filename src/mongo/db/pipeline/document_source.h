@@ -1694,8 +1694,10 @@ private:
     long long _outputIndex;
 };
 
-// Provides a document source interface to retrieve the operation latency histogram statistics
-// for a given collection on a single mongod instance.
+/**
+ * Provides a document source interface to retrieve the operation latency histogram statistics
+ * for a given collection on a single mongod instance.
+ */
 class DocumentSourceCollStats : public DocumentSource, public DocumentSourceNeedsMongod {
 public:
     DocumentSourceCollStats(const boost::intrusive_ptr<ExpressionContext>& pExpCtx)

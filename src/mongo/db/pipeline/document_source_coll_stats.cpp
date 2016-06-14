@@ -48,14 +48,15 @@ intrusive_ptr<DocumentSource> DocumentSourceCollStats::createFromBson(
     BSONElement specElem, const intrusive_ptr<ExpressionContext>& pExpCtx) {
     uassert(40144,
             "the collStats filter must be an expression in an object",
-            specElem.type() == Object);
+            specElem.type() == BSONType::Object);
     intrusive_ptr<DocumentSourceCollStats> collStats(new DocumentSourceCollStats(pExpCtx));
 
     for (const auto& elem : specElem.embeddedObject()) {
         StringData fieldName = elem.fieldNameStringData();
 
         if (fieldName == "latencyStats") {
-            uassert(40145, "latencyStats argument must be an object", elem.type() == Object);
+            uassert(
+                40145, "latencyStats argument must be an object", elem.type() == BSONType::Object);
             collStats->_latencySpecified = true;
         } else {
             uasserted(40146, str::stream() << "unrecognized option to $collStats: " << fieldName);
@@ -87,6 +88,9 @@ bool DocumentSourceCollStats::isValidInitialSource() const {
 }
 
 Value DocumentSourceCollStats::serialize(bool explain) const {
+    if (_latencySpecified) {
+        return Value(DOC(getSourceName() << DOC("latencyStats" << Document())));
+    }
     return Value(DOC(getSourceName() << Document()));
 }
 

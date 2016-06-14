@@ -10,6 +10,24 @@ var testCollHelper = testDB[name + "coll_helper"];
 testColl.drop();
 testCollHelper.drop();
 
+// Test aggregation command output format.
+var commandResult = testDB.runCommand(
+    {aggregate: testColl.getName(), pipeline: [{$collStats: {latencyStats: {}}}]});
+assert.commandWorked(commandResult, "Aggregation command failed");
+assert(commandResult.result.length == 1);
+
+var stats = commandResult.result[0];
+var histogramTypes = ["reads", "writes", "commands"];
+
+assert(stats.hasOwnProperty("localTime"));
+assert(stats.hasOwnProperty("latencyStats"));
+
+histogramTypes.forEach(function(key) {
+    assert(stats.latencyStats.hasOwnProperty(key));
+    assert(stats.latencyStats[key].hasOwnProperty("ops"));
+    assert(stats.latencyStats[key].hasOwnProperty("latency"));
+});
+
 function getHistogramStats() {
     return testColl.latencyStats().toArray()[0].latencyStats;
 }
@@ -164,11 +182,6 @@ checkHistogramDiff(0, 0, 0);
 // Test non-commands.
 testColl.runCommand("IHopeNobodyEverMakesThisACommand");
 checkHistogramDiff(0, 0, 0);
-
-// Test aggregation command syntax.
-var commandResult = testDB.runCommand(
-    {aggregate: testColl.getName(), pipeline: [{$collStats: {latencyStats: {}}}]});
-assert.commandWorked(commandResult, "Aggregation command failed");
 
 commandResult = testDB.runCommand({aggregate: testColl.getName(), pipeline: [{$collStats: true}]});
 assert.commandFailed(commandResult);
