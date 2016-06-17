@@ -554,7 +554,14 @@ WriteResult performUpdates(OperationContext* txn, const UpdateOp& wholeOp) {
     out.results.reserve(wholeOp.updates.size());
     for (auto&& singleOp : wholeOp.updates) {
         // TODO: don't create nested CurOp for legacy writes.
+        // Add the CurOp command to the nested CurOp for latency histogram statistics.
+        auto& parentCurOp = *CurOp::get(txn);
+        Command* cmd = parentCurOp.getCommand();
         CurOp curOp(txn);
+        {
+            stdx::lock_guard<Client>(*txn->getClient());
+            curOp.setCommand_inlock(cmd);
+        }
         ON_BLOCK_EXIT([&] { finishCurOp(txn, &curOp); });
         try {
             lastOpFixer.startingOp();
@@ -649,7 +656,14 @@ WriteResult performDeletes(OperationContext* txn, const DeleteOp& wholeOp) {
     out.results.reserve(wholeOp.deletes.size());
     for (auto&& singleOp : wholeOp.deletes) {
         // TODO: don't create nested CurOp for legacy writes.
+        // Add the CurOp command to the nested CurOp for latency histogram statistics.
+        auto& parentCurOp = *CurOp::get(txn);
+        Command* cmd = parentCurOp.getCommand();
         CurOp curOp(txn);
+        {
+            stdx::lock_guard<Client>(*txn->getClient());
+            curOp.setCommand_inlock(cmd);
+        }
         ON_BLOCK_EXIT([&] { finishCurOp(txn, &curOp); });
         try {
             lastOpFixer.startingOp();

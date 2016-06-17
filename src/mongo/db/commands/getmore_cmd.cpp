@@ -102,8 +102,8 @@ public:
         return false;
     }
 
-    HistogramType getHistogramType() const {
-        return HistogramType::opRead;
+    OperationType getOperationType() const {
+        return OperationType::opRead;
     }
 
     void help(std::stringstream& help) const override {

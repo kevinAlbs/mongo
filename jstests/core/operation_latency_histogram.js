@@ -38,10 +38,10 @@ var lastHistogram = getHistogramStats();
 // accounts for the $collStats aggregation stage itself.
 function checkHistogramDiff(reads, writes, commands) {
     var thisHistogram = getHistogramStats();
-    assert.eq(thisHistogram.reads.ops - lastHistogram.reads.ops, reads);
+    // Running the aggregation itself will increment read stats by one.
+    assert.eq(thisHistogram.reads.ops - lastHistogram.reads.ops, reads + 1);
     assert.eq(thisHistogram.writes.ops - lastHistogram.writes.ops, writes);
-    // Running the aggregation itself will increment command stats by one.
-    assert.eq(thisHistogram.commands.ops - lastHistogram.commands.ops, commands + 1);
+    assert.eq(thisHistogram.commands.ops - lastHistogram.commands.ops, commands);
     lastHistogram = thisHistogram;
 }
 
@@ -100,25 +100,22 @@ checkHistogramDiff(0, numRecords, 0);
 for (var i = 0; i < numRecords; i++) {
     testColl.aggregate([{$match: {x: i}}, {$group: {_id: "$x"}}]);
 }
-// Note: design doc says read, but it is counted as two commands due to how top records operations.
-checkHistogramDiff(0, 0, 2 * numRecords);
+// Note: It is counted as two reads due to how top records operations.
+checkHistogramDiff(2 * numRecords, 0, 0);
 
 // Count
 for (var i = 0; i < numRecords; i++) {
     testColl.count({x: i});
 }
-// Note: design doc says read, but it is counted as command.
-checkHistogramDiff(0, 0, numRecords);
+checkHistogramDiff(numRecords, 0, 0);
 
 // Group
 testColl.group({initial: {}, reduce: function() {}, key: {a: 1}});
-// Note: design doc says read, but it is counted as command.
-checkHistogramDiff(0, 0, 1);
+checkHistogramDiff(1, 0, 0);
 
 // ParallelCollectionScan
 testDB.runCommand({parallelCollectionScan: testColl.getName(), numCursors: 5});
-// Note: design doc says read, but it is counted as command.
-checkHistogramDiff(0, 0, 1);
+checkHistogramDiff(1, 0, 0);
 
 // FindAndModify
 testColl.findAndModify({query: {}, update: {pt: {type: "point", coordinates: [0, 0]}}});
@@ -132,8 +129,7 @@ checkHistogramDiff(0, 0, 0);
 
 // GeoNear
 testDB.runCommand({geoNear: testColl.getName(), near: {type: "point", coordinates: [0, 0]}});
-// Note: design doc says read, but this is counted as command.
-checkHistogramDiff(0, 0, 1);
+checkHistogramDiff(1, 0, 0);
 
 // GetIndexes
 testColl.getIndexes();

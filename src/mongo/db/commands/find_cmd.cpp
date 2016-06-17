@@ -104,8 +104,8 @@ public:
         return LogicalOp::opQuery;
     }
 
-    HistogramType getHistogramType() const {
-        return HistogramType::opRead;
+    OperationType getOperationType() const {
+        return OperationType::opRead;
     }
 
     std::size_t reserveBytesForReply() const override {

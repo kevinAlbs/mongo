@@ -69,7 +69,7 @@ TEST(OperationLatencyHistogram, Increment) {
         hist.incrementBucket(latency, i, HistogramType::opCommand);
     }
     BSONObjBuilder outBuilder;
-    hist.append(outBuilder);
+    hist.append(&outBuilder);
     BSONObj out = outBuilder.done();
     ASSERT_EQUALS(out["reads"]["ops"].Long(), nBuckets);
     ASSERT_EQUALS(out["writes"]["ops"].Long(), nBuckets);
@@ -85,7 +85,7 @@ TEST(OperationLatencyHistogram, GlobalIncrement) {
         incrementGlobalHistogram(latency, HistogramType::opCommand);
     }
     BSONObjBuilder outBuilder;
-    appendGlobalHistogram(outBuilder);
+    appendGlobalHistogram(&outBuilder);
     BSONObj out = outBuilder.done();
     // Only checking GTE because these values could be effected by other tests.
     ASSERT_GTE(out["reads"]["ops"].Long(), nBuckets);

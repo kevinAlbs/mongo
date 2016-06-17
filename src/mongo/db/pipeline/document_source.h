@@ -326,7 +326,10 @@ public:
 
         virtual bool hasUniqueIdIndex(const NamespaceString& ns) const = 0;
 
-        virtual void appendHistogram(const NamespaceString& ns, BSONObjBuilder& builder) const = 0;
+        /**
+         * Inserts the latency statistics for a given collection
+         */
+        virtual void appendLatencyStats(const NamespaceString& nss, BSONObjBuilder* builder) const = 0;
 
         // Add new methods as needed.
     };
@@ -1702,9 +1705,13 @@ class DocumentSourceCollStats : public DocumentSource, public DocumentSourceNeed
 public:
     DocumentSourceCollStats(const boost::intrusive_ptr<ExpressionContext>& pExpCtx)
         : DocumentSource(pExpCtx) {}
+
     boost::optional<Document> getNext() final;
+
     const char* getSourceName() const final;
+
     bool isValidInitialSource() const final;
+
     Value serialize(bool explain = false) const;
 
     static boost::intrusive_ptr<DocumentSource> createFromBson(

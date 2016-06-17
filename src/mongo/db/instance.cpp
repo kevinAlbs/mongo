@@ -692,11 +692,10 @@ void assembleResponse(OperationContext* txn,
 
     logThreshold += currentOp.getExpectedLatencyMs();
 
-    if (c.isFromUserConnection()) {
+    if (c.isFromUserConnection() && !c.isInDirectClient()) {
         Command* cmd = currentOp.getCommand();
         if (cmd) {
-            LOG(2) << "Incrementing global histogram with command " << cmd->getName();
-            incrementGlobalHistogram(currentOp.totalTimeMicros(), cmd->getHistogramType());
+            incrementGlobalHistogram(currentOp.totalTimeMicros(), cmd->getOperationType());
         }
     }
 

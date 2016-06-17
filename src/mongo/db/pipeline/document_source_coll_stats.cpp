@@ -47,7 +47,7 @@ const char* DocumentSourceCollStats::getSourceName() const {
 intrusive_ptr<DocumentSource> DocumentSourceCollStats::createFromBson(
     BSONElement specElem, const intrusive_ptr<ExpressionContext>& pExpCtx) {
     uassert(40144,
-            "the collStats filter must be an expression in an object",
+            str::stream() << "$collStats must take a nested object but found: " << specElem,
             specElem.type() == BSONType::Object);
     intrusive_ptr<DocumentSourceCollStats> collStats(new DocumentSourceCollStats(pExpCtx));
 
@@ -56,7 +56,7 @@ intrusive_ptr<DocumentSource> DocumentSourceCollStats::createFromBson(
 
         if (fieldName == "latencyStats") {
             uassert(
-                40145, "latencyStats argument must be an object", elem.type() == BSONType::Object);
+                40145, str::stream() << "latencyStats argument must be an object, but found: " << elem, elem.type() == BSONType::Object);
             collStats->_latencySpecified = true;
         } else {
             uasserted(40146, str::stream() << "unrecognized option to $collStats: " << fieldName);
@@ -77,7 +77,7 @@ boost::optional<Document> DocumentSourceCollStats::getNext() {
 
     builder.appendDate("localTime", jsTime());
     if (_latencySpecified) {
-        _mongod->appendHistogram(pExpCtx->ns, builder);
+        _mongod->appendLatencyStats(pExpCtx->ns, &builder);
     }
 
     return Document(builder.obj());

@@ -38,33 +38,65 @@
 
 namespace mongo {
 
-enum class HistogramType { opCommand, opRead, opWrite };
+enum class OperationType { opCommand, opRead, opWrite };
 
+/**
+ * Stores statistics for latencies of read, write, and command operations.
+ *
+ * Note: Callers must use proper synchronization.
+ */
 class OperationLatencyHistogram {
 public:
     static const int kMaxBuckets = 51;
+
+    /**
+     * Returns the histogram bucket for a given operation latency.
+     */
     static int getBucket(uint64_t latency);
+
+    /**
+     * Returns the inclusive lower bound in microseconds of the specified bucket.
+     */
     static uint64_t getBucketMicros(int bucket);
 
     OperationLatencyHistogram() = default;
 
-    void incrementBucket(uint64_t latency, int bucket, HistogramType type);
-    void incrementBucket(uint64_t latency, int bucket, LogicalOp op);
-    void append(BSONObjBuilder& bb);
+    /**
+     * Increments the bucket of the histogram based on the operation type.
+     */
+    void incrementBucket(uint64_t latency, int bucket, OperationType type);
+
+    /**
+     * Appends the three histograms with latency totals and operation counts.
+     */
+    void append(BSONObjBuilder* bb);
 
 private:
-    typedef struct {
+    struct HistogramData {
         std::array<uint64_t, kMaxBuckets> buckets{};
         uint64_t entryCount = 0;
         uint64_t sum = 0;
-    } HistogramData;
+    };
 
-    void _append(const HistogramData& data, const std::string& key, BSONObjBuilder& bb);
-    void _incrementData(uint64_t latency, int bucket, HistogramData& data);
+    void _append(const HistogramData& data, const std::string& key, BSONObjBuilder* bb);
+
+    void _incrementData(uint64_t latency, int bucket, HistogramData* data);
+
     HistogramData _reads, _writes, _commands;
 };
 
-void incrementGlobalHistogram(uint64_t latency, HistogramType type);
-void appendGlobalHistogram(BSONObjBuilder& builder);
+/**
+ * Increments the global histogram.
+ *
+ * Note: Locking is done inside this method.
+ */
+void incrementGlobalHistogram(uint64_t latency, OperationType type);
+
+/**
+ * Appends the global latency statistics.
+ *
+ * Note: Locking is done inside this method.
+ */
+void appendGlobalLatencyStats(BSONObjBuilder* builder);
 
 }  // namespace mongo

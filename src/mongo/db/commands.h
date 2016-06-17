@@ -270,8 +270,11 @@ public:
         return LogicalOp::opCommand;
     }
 
-    virtual HistogramType getHistogramType() const {
-        return HistogramType::opCommand;
+    /**
+     * Returns whether this operation is a read, write, or command.
+     */
+    virtual OperationType getOperationType() const {
+        return OperationType::opCommand;
     }
 
 protected:

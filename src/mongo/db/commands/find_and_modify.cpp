@@ -216,20 +216,23 @@ public:
     }
 
     CmdFindAndModify() : Command("findAndModify", false, "findandmodify") {}
+
     bool slaveOk() const override {
         return false;
     }
+
     virtual bool supportsWriteConcern(const BSONObj& cmd) const override {
         return true;
     }
+
     void addRequiredPrivileges(const std::string& dbname,
                                const BSONObj& cmdObj,
                                std::vector<Privilege>* out) override {
         find_and_modify::addPrivilegesRequiredForFindAndModify(this, dbname, cmdObj, out);
     }
 
-    HistogramType getHistogramType() const {
-        return HistogramType::opWrite;
+    OperationType getOperationType() const {
+        return OperationType::opWrite;
     }
 
     Status explain(OperationContext* txn,

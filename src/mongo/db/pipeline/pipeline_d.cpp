@@ -130,8 +130,8 @@ public:
         return collection->getIndexCatalog()->findIdIndex(_ctx->opCtx);
     }
 
-    void appendHistogram(const NamespaceString& ns, BSONObjBuilder& builder) const {
-        Top::get(_ctx->opCtx->getServiceContext()).appendHistogram(ns.ns(), builder);
+    void appendLatencyStats(const NamespaceString& nss, BSONObjBuilder* builder) const {
+        Top::get(_ctx->opCtx->getServiceContext()).appendLatencyStats(nss.ns(), builder);
     }
 
 private:

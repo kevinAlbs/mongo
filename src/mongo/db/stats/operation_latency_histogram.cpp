@@ -53,27 +53,27 @@ public:
     GlobalHistogramServerStatusMetric() : ServerStatusMetric(".metrics.latency") {}
     virtual void appendAtLeaf(BSONObjBuilder& builder) const {
         BSONObjBuilder latencyBuilder;
-        appendGlobalHistogram(latencyBuilder);
+        appendGlobalLatencyStats(&latencyBuilder);
         builder.append("latency", latencyBuilder.obj());
     }
 } globalHistogramServerStatusMetric;
 
 }  // namespace
 
-void incrementGlobalHistogram(uint64_t latency, HistogramType type) {
+void incrementGlobalHistogram(uint64_t latency, OperationType type) {
     int bucket = OperationLatencyHistogram::getBucket(latency);
     stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
     globalHistogramStats.incrementBucket(latency, bucket, type);
 }
 
-void appendGlobalHistogram(BSONObjBuilder& builder) {
+void appendGlobalLatencyStats(BSONObjBuilder* builder) {
     stdx::lock_guard<stdx::mutex> guard(globalHistogramLock);
     globalHistogramStats.append(builder);
 }
 
 void OperationLatencyHistogram::_append(const HistogramData& data,
                                         const std::string& key,
-                                        BSONObjBuilder& builder) {
+                                        BSONObjBuilder* builder) {
 
     BSONObjBuilder histogramBuilder;
     BSONArrayBuilder arrayBuilder(kMaxBuckets);
@@ -88,10 +88,10 @@ void OperationLatencyHistogram::_append(const HistogramData& data,
     histogramBuilder.appendArray("histogram", arrayBuilder.arr());
     histogramBuilder.append("latency", static_cast<long long>(data.sum));
     histogramBuilder.append("ops", static_cast<long long>(data.entryCount));
-    builder.append(key, histogramBuilder.obj());
+    builder->append(key, histogramBuilder.obj());
 }
 
-void OperationLatencyHistogram::append(BSONObjBuilder& builder) {
+void OperationLatencyHistogram::append(BSONObjBuilder* builder) {
     _append(_reads, "reads", builder);
     _append(_writes, "writes", builder);
     _append(_commands, "commands", builder);
@@ -124,44 +124,22 @@ int OperationLatencyHistogram::getBucket(uint64_t value) {
     }
 }
 
-void OperationLatencyHistogram::_incrementData(uint64_t latency, int bucket, HistogramData& data) {
-    data.buckets[bucket]++;
-    data.entryCount++;
-    data.sum += latency;
+void OperationLatencyHistogram::_incrementData(uint64_t latency, int bucket, HistogramData* data) {
+    data->buckets[bucket]++;
+    data->entryCount++;
+    data->sum += latency;
 }
 
-void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, HistogramType type) {
+void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, OperationType type) {
     switch (type) {
-        case HistogramType::opRead:
-            _incrementData(latency, bucket, _reads);
+        case OperationType::opRead:
+            _incrementData(latency, bucket, &_reads);
             break;
-        case HistogramType::opWrite:
-            _incrementData(latency, bucket, _writes);
+        case OperationType::opWrite:
+            _incrementData(latency, bucket, &_writes);
             break;
-        case HistogramType::opCommand:
-            _incrementData(latency, bucket, _commands);
-            break;
-        default:
-            MONGO_UNREACHABLE;
-    }
-}
-
-void OperationLatencyHistogram::incrementBucket(uint64_t latency, int bucket, LogicalOp op) {
-    switch (op) {
-        case LogicalOp::opQuery:
-        case LogicalOp::opGetMore:
-            _incrementData(latency, bucket, _reads);
-            break;
-        case LogicalOp::opUpdate:
-        case LogicalOp::opInsert:
-        case LogicalOp::opDelete:
-            _incrementData(latency, bucket, _writes);
-            break;
-        case LogicalOp::opCommand:
-            _incrementData(latency, bucket, _commands);
-            break;
-        case LogicalOp::opKillCursors:
-        case LogicalOp::opInvalid:
+        case OperationType::opCommand:
+            _incrementData(latency, bucket, &_commands);
             break;
         default:
             MONGO_UNREACHABLE;

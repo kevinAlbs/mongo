@@ -33,6 +33,8 @@
 
 #include "mongo/db/stats/top.h"
 
+#include "mongo/db/commands.h"
+#include "mongo/db/curop.h"
 #include "mongo/db/jsobj.h"
 #include "mongo/db/service_context.h"
 #include "mongo/util/log.h"
@@ -98,12 +100,13 @@ void Top::record(OperationContext* txn,
 void Top::_record(
     OperationContext* txn, CollectionData& c, LogicalOp logicalOp, int lockType, long long micros) {
     // Only update histograms if operation came from user.
-    if (txn->getClient()->isFromUserConnection()) {
-        // Using HistogramType instead of LogicalOp is preferable (as the global histogram uses).
-        // But commands which push a new curop onto the stack make the Command object inaccessible.
-        LOG(2) << "Incrementing collection histogram with op " << logicalOpToString(logicalOp);
-        int histogramBucket = OperationLatencyHistogram::getBucket(micros);
-        c.opLatencyHistogram.incrementBucket(micros, histogramBucket, logicalOp);
+    Client* client = txn->getClient();
+    if (client->isFromUserConnection() && !client->isInDirectClient()) {
+        Command* cmd = CurOp::get(txn)->getCommand();
+        if (cmd) {
+            int histogramBucket = OperationLatencyHistogram::getBucket(micros);
+            c.opLatencyHistogram.incrementBucket(micros, histogramBucket, cmd->getOperationType());
+        }
     }
 
     c.total.inc(micros);
@@ -196,11 +199,11 @@ void Top::_appendStatsEntry(BSONObjBuilder& b, const char* statsName, const Usag
     bb.done();
 }
 
-void Top::appendHistogram(StringData ns, BSONObjBuilder& b) {
+void Top::appendLatencyStats(StringData ns, BSONObjBuilder* b) {
     auto hashedNs = UsageMap::HashedKey(ns);
     stdx::lock_guard<SimpleMutex> lk(_lock);
     BSONObjBuilder bb;
-    _usage[hashedNs].opLatencyHistogram.append(bb);
-    b.append("latencyStats", bb.obj());
+    _usage[hashedNs].opLatencyHistogram.append(&bb);
+    b->append("latencyStats", bb.obj());
 }
 }  // namespace mongo

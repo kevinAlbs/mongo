@@ -203,8 +203,8 @@ public:
         return true;
     }
 
-    HistogramType getHistogramType() const {
-        return HistogramType::opWrite;
+    OperationType getOperationType() const {
+        return OperationType::opWrite;
     }
 
     bool run(OperationContext* txn,

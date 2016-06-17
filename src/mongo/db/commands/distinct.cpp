@@ -81,17 +81,21 @@ public:
     virtual bool slaveOk() const {
         return false;
     }
+
     virtual bool slaveOverrideOk() const {
         return true;
     }
+
     virtual bool supportsWriteConcern(const BSONObj& cmd) const override {
         return false;
     }
+
     bool supportsReadConcern() const final {
         return true;
     }
-    HistogramType getHistogramType() const {
-        return HistogramType::opRead;
+
+    OperationType getOperationType() const {
+        return OperationType::opRead;
     }
 
     std::size_t reserveBytesForReply() const override {

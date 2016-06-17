@@ -173,10 +173,6 @@ public:
         help << "Runs the sharded map/reduce command";
     }
 
-    HistogramType getHistogramType() const {
-        return HistogramType::opRead;
-    }
-
     virtual void addRequiredPrivileges(const std::string& dbname,
                                        const BSONObj& cmdObj,
                                        std::vector<Privilege>* out) {

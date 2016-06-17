@@ -141,7 +141,7 @@ DBCollection.prototype.help = function() {
     print(
         "\tdb." + shortName +
         ".unsetWriteConcern( <write concern doc> ) - unsets the write concern for writes to the collection");
-    print("\tdb." + shortName + ".latencyStats() - show statistics about the collection");
+    print("\tdb." + shortName + ".latencyStats() - display operation latency histograms for this collection");
     // print("\tdb." + shortName + ".getDiskStorageStats({...}) - prints a summary of disk usage
     // statistics");
     // print("\tdb." + shortName + ".getPagesInRAM({...}) - prints a summary of storage pages

@@ -82,8 +82,8 @@ private:
         return true;
     }
 
-    HistogramType getHistogramType() const {
-        return HistogramType::opRead;
+    OperationType getOperationType() const {
+        return OperationType::opRead;
     }
 
     std::size_t reserveBytesForReply() const override {

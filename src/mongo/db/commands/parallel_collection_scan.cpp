@@ -69,8 +69,8 @@ public:
         return true;
     }
 
-    HistogramType getHistogramType() const {
-        return HistogramType::opRead;
+    OperationType getOperationType() const {
+        return OperationType::opRead;
     }
 
     virtual Status checkAuthForCommand(ClientBasic* client,
