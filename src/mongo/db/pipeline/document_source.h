@@ -2120,4 +2120,20 @@ private:
     boost::intrusive_ptr<GranularityRounder> _granularityRounder;
     long long _nDocuments = 0;
 };
+
+// TODO: This is a hack, it implicity requires documents to be in sorted order.
+class DocumentSourceSkyline final : DocumentSource {
+public:
+    DocumentSourceSkyline(const boost::intrusive_ptr<ExpressionContext>& pExpCtx) : DocumentSource(pExpCtx) {}
+    static std::vector<boost::intrusive_ptr<DocumentSource>> createFromBson(
+        BSONElement elem, const boost::intrusive_ptr<ExpressionContext>& pExpCtx);
+    boost::optional<Document> getNext();
+    const char* getSourceName() const {
+        return "$skyline";
+    }
+    Value serialize(bool explain = false) const;
+private:
+    bool _dominates(const Document& doc1, const Document& doc2);
+    std::vector<Document> _skyline;
+};
 }  // namespace mongo
