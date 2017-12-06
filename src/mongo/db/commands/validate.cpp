@@ -201,16 +201,22 @@ public:
         CollectionCatalogEntry* catalogEntry = collection->getCatalogEntry();
         CollectionOptions opts = catalogEntry->getCollectionOptions(opCtx);
 
-        bool expectUUID = serverGlobalParams.featureCompatibility.isSchemaVersion36();
+        // Skip checking UUID on system.indexes and system.namespaces until SERVER-30095 and
+        // SERVER-29926 are resolved.
+        bool skipUUIDCheck = nss.coll() == "system.indexes" || nss.coll() == "system.namespaces";
 
-        if (expectUUID && !opts.uuid) {
-            results.errors.push_back(str::stream() << "UUID missing on collection " << nss.ns()
-                                                   << " but SchemaVersion=3.6");
-            results.valid = false;
-        } else if (!expectUUID && opts.uuid) {
-            results.errors.push_back(str::stream() << "UUID present in collection " << nss.ns()
-                                                   << " but SchemaVersion!=3.6");
-            results.valid = false;
+        if (!skipUUIDCheck) {
+            bool expectUUID = serverGlobalParams.featureCompatibility.isSchemaVersion36();
+
+            if (expectUUID && !opts.uuid) {
+                results.errors.push_back(str::stream() << "UUID missing on collection " << nss.ns()
+                                                       << " but SchemaVersion=3.6");
+                results.valid = false;
+            } else if (!expectUUID && opts.uuid) {
+                results.errors.push_back(str::stream() << "UUID present in collection " << nss.ns()
+                                                       << " but SchemaVersion!=3.6");
+                results.valid = false;
+            }
         }
 
         if (!full) {
