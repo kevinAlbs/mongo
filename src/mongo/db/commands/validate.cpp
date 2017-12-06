@@ -33,6 +33,7 @@
 #include "mongo/platform/basic.h"
 
 #include "mongo/db/catalog/collection.h"
+#include "mongo/db/catalog/collection_catalog_entry.h"
 #include "mongo/db/client.h"
 #include "mongo/db/commands.h"
 #include "mongo/db/db_raii.h"
@@ -190,24 +191,26 @@ public:
             _validationNotifier.notify_all();
         });
 
+        ValidateResults results;
+        Status status =
+            collection->validate(opCtx, level, background, std::move(collLk), &results, &result);
+        if (!status.isOK()) {
+            return appendCommandStatus(result, status);
+        }
+
         CollectionCatalogEntry* catalogEntry = collection->getCatalogEntry();
         CollectionOptions opts = catalogEntry->getCollectionOptions(opCtx);
 
         bool expectUUID = serverGlobalParams.featureCompatibility.isSchemaVersion36();
 
         if (expectUUID && !opts.uuid) {
-            results.errors.push_back(str::stream << "UUID missing on collection " << nss.ns() << " but FCV=3.6");
+            results.errors.push_back(str::stream()
+                << "UUID missing on collection " << nss.ns() << " but SchemaVersion=3.6");
             results.valid = false;
         } else if (!expectUUID && opts.uuid) {
-            results.errors.push_back(str::stream << "UUID present in collection " << nss.ns() << " but FCV=3.4");
+            results.errors.push_back(str::stream()
+                << "UUID present in collection " << nss.ns() << " but SchemaVersion!=3.6");
             results.valid = false;
-        }
-
-        ValidateResults results;
-        Status status =
-            collection->validate(opCtx, level, background, std::move(collLk), &results, &result);
-        if (!status.isOK()) {
-            return appendCommandStatus(result, status);
         }
 
         if (!full) {
