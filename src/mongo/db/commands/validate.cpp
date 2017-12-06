@@ -190,6 +190,19 @@ public:
             _validationNotifier.notify_all();
         });
 
+        CollectionCatalogEntry* catalogEntry = collection->getCatalogEntry();
+        CollectionOptions opts = catalogEntry->getCollectionOptions(opCtx);
+
+        bool expectUUID = serverGlobalParams.featureCompatibility.isSchemaVersion36();
+
+        if (expectUUID && !opts.uuid) {
+            results.errors.push_back(str::stream << "UUID missing on collection " << nss.ns() << " but FCV=3.6");
+            results.valid = false;
+        } else if (!expectUUID && opts.uuid) {
+            results.errors.push_back(str::stream << "UUID present in collection " << nss.ns() << " but FCV=3.4");
+            results.valid = false;
+        }
+
         ValidateResults results;
         Status status =
             collection->validate(opCtx, level, background, std::move(collLk), &results, &result);
