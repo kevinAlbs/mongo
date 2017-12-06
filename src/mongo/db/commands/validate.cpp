@@ -204,12 +204,12 @@ public:
         bool expectUUID = serverGlobalParams.featureCompatibility.isSchemaVersion36();
 
         if (expectUUID && !opts.uuid) {
-            results.errors.push_back(str::stream()
-                << "UUID missing on collection " << nss.ns() << " but SchemaVersion=3.6");
+            results.errors.push_back(str::stream() << "UUID missing on collection " << nss.ns()
+                                                   << " but SchemaVersion=3.6");
             results.valid = false;
         } else if (!expectUUID && opts.uuid) {
-            results.errors.push_back(str::stream()
-                << "UUID present in collection " << nss.ns() << " but SchemaVersion!=3.6");
+            results.errors.push_back(str::stream() << "UUID present in collection " << nss.ns()
+                                                   << " but SchemaVersion!=3.6");
             results.valid = false;
         }
 
