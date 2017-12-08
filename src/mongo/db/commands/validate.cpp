@@ -206,17 +206,28 @@ public:
         bool skipUUIDCheck = nss.coll() == "system.indexes" || nss.coll() == "system.namespaces";
 
         if (!skipUUIDCheck) {
-            bool expectUUID = serverGlobalParams.featureCompatibility.isSchemaVersion36();
+            FeatureCompatibility::Version version =
+                serverGlobalParams.featureCompatibility.getVersion();
 
-            if (expectUUID && !opts.uuid) {
-                results.errors.push_back(str::stream() << "UUID missing on collection " << nss.ns()
-                                                       << " but SchemaVersion=3.6");
-                results.valid = false;
-            } else if (!expectUUID && opts.uuid) {
-                results.errors.push_back(str::stream() << "UUID present in collection " << nss.ns()
-                                                       << " but SchemaVersion!=3.6");
-                results.valid = false;
+            if (version == FeatureCompatibility::Version::kFullyUpgradedTo36) {
+                // All collections must have a UUID.
+                if (!opts.uuid) {
+                    results.errors.push_back(str::stream() << "UUID missing on collection "
+                                                           << nss.ns()
+                                                           << " but SchemaVersion=3.6");
+                    results.valid = false;
+                }
+            } else if (version == FeatureCompatibility::Version::kFullyDowngradedTo36) {
+                // All collections must not have a UUID.
+                if (opts.uuid) {
+                    results.errors.push_back(str::stream() << "UUID present in collection "
+                                                           << nss.ns()
+                                                           << " but SchemaVersion!=3.6");
+                    results.valid = false;
+                }
             }
+            // Otherwise, collections are in transition and are valid whether or not they have a
+            // UUID.
         }
 
         if (!full) {
