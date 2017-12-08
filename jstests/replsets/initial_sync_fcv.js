@@ -68,7 +68,7 @@
         let res =
             assert.commandWorked(secondary.adminCommand({replSetGetStatus: 1, initialSync: 1}));
         assert.eq(res.initialSyncStatus.failedInitialSyncAttempts, 1);
-        jsTestLog('eyyo');
+
         // We check oplogs and data hashes before we restart the second node.
         rst.checkOplogs();
         rst.checkReplicatedDataHashes();
