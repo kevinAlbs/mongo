@@ -206,10 +206,10 @@ public:
         bool skipUUIDCheck = nss.coll() == "system.indexes" || nss.coll() == "system.namespaces";
 
         if (!skipUUIDCheck) {
-            FeatureCompatibility::Version version =
+            ServerGlobalParams::FeatureCompatibility::Version version =
                 serverGlobalParams.featureCompatibility.getVersion();
 
-            if (version == FeatureCompatibility::Version::kFullyUpgradedTo36) {
+            if (version == ServerGlobalParams::FeatureCompatibility::Version::kFullyUpgradedTo36) {
                 // All collections must have a UUID.
                 if (!opts.uuid) {
                     results.errors.push_back(str::stream() << "UUID missing on collection "
@@ -217,7 +217,8 @@ public:
                                                            << " but SchemaVersion=3.6");
                     results.valid = false;
                 }
-            } else if (version == FeatureCompatibility::Version::kFullyDowngradedTo36) {
+            } else if (version ==
+                       ServerGlobalParams::FeatureCompatibility::Version::kFullyDowngradedTo34) {
                 // All collections must not have a UUID.
                 if (opts.uuid) {
                     results.errors.push_back(str::stream() << "UUID present in collection "
