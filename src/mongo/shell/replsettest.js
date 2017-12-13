@@ -487,6 +487,10 @@ var ReplSetTest = function(opts) {
     this.startSet = function(options) {
         print("ReplSetTest starting set");
 
+        Random.setRandomSeed(Date.now());
+        this._leak = {id: Random.srand()}
+        print("replsettest_startset_" + jsTest.name + "_" + this._leak.id);
+
         if (options && options.keyFile) {
             self.keyFile = options.keyFile;
         }
@@ -1939,6 +1943,9 @@ var ReplSetTest = function(opts) {
      * @param {Object} opts @see MongoRunner.stopMongod
      */
     this.stopSet = function(signal, forRestart, opts) {
+        if (this._leak) {
+            print("replsettest_stopset_" + jsTest.name + "_" + this._leak.id);
+        }
         for (var i = 0; i < this.ports.length; i++) {
             this.stop(i, signal, opts);
         }
