@@ -1939,6 +1939,14 @@ var ReplSetTest = function(opts) {
      * @param {Object} opts @see MongoRunner.stopMongod
      */
     this.stopSet = function(signal, forRestart, opts) {
+        // Check to make sure data is the same on all nodes.
+        // To skip this check add TestData.skipCheckDBHashes = true;
+        if (!jsTest.options().skipCheckDBHashes) {
+            _callIsMaster(); // need to update liveNodes
+            if (this.liveNodes.master !== null) {
+                this.checkReplicatedDataHashes();
+            }
+        }
         for (var i = 0; i < this.ports.length; i++) {
             this.stop(i, signal, opts);
         }
