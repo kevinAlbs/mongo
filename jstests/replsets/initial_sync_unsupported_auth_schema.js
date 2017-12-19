@@ -1,6 +1,8 @@
 // Test that initial sync aborts when it encounters auth data from unsupported
 // auth schemas (see: SERVER-17671)
 
+TestData.skipCheckDBHashes = true;
+
 function testInitialSyncAbortsWithUnsupportedAuthSchema(schema) {
     'use strict';
 

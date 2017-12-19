@@ -14,6 +14,9 @@
  * restarting, so will initial sync in this scenario, invalidating the test.
  * @tags: [requires_persistence]
  */
+
+TestData.skipCheckDBHashes = true;
+
 (function() {
     "use strict";
 
