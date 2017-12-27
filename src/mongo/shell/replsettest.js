@@ -1592,7 +1592,9 @@ var ReplSetTest = function(opts) {
             assert(success, 'dbhash mismatch between primary and secondary');
         }
 
-        this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);
+        asCluster(this.nodes, () => {
+            this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);    
+        });
     };
 
     this.checkOplogs = function(msgPrefix) {
