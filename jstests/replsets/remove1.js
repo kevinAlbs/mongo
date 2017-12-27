@@ -8,6 +8,8 @@
  * Make sure both nodes are either primary or secondary
  */
 
+TestData.skipCheckDBHashes = true;
+
 load("jstests/replsets/rslib.js");
 var name = "removeNodes";
 var host = getHostName();

@@ -3,6 +3,8 @@
 (function() {
     "use strict";
 
+    TestData.skipCheckDBHashes = true;
+
     var exceededTimeLimitCode = 50;
     var writeConcernFailedCode = 64;
     var replTest = new ReplSetTest({nodes: 3});

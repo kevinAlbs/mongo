@@ -5,6 +5,8 @@ load('jstests/replsets/rslib.js');
 (function() {
     "use strict";
 
+    TestData.skipCheckDBHashes = true;
+
     var ns = "test.coll";
 
     var rst = new ReplSetTest({

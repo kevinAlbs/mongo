@@ -3,6 +3,7 @@
 load('jstests/replsets/rslib.js');
 (function() {
     "use strict";
+    TestData.skipCheckDBHashes = true;
 
     let ns = "test.coll";
 

@@ -3,6 +3,8 @@
 (function() {
     "use strict";
 
+    TestData.skipCheckDBHashes = true;
+
     var replTest = new ReplSetTest({name: 'unicomplex', nodes: 3});
     var nodes = replTest.nodeList();
 

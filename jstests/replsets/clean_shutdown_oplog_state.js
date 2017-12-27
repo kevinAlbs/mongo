@@ -7,6 +7,8 @@
 (function() {
     "use strict";
 
+    TestData.skipCheckDBHashes = true;
+
     var rst = new ReplSetTest({
         name: "name",
         nodes: 2,

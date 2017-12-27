@@ -6,6 +6,8 @@
 (function() {
     "use strict";
 
+    TestData.skipCheckDBHashes = true;
+
     load("jstests/replsets/rslib.js");
 
     const testName = "initial_sync_invalid_index_spec";

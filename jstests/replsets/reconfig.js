@@ -4,6 +4,9 @@
  */
 (function() {
     "use strict";
+
+    TestData.skipCheckDBHashes = true;
+
     var numNodes = 5;
     var replTest = new ReplSetTest({name: 'testSet', nodes: numNodes});
     var nodes = replTest.startSet();

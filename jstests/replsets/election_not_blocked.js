@@ -9,6 +9,9 @@
 
 (function() {
     "use strict";
+
+    TestData.skipCheckDBHashes = true;
+    
     var name = "electionNotBlocked";
     var replTest = new ReplSetTest({name: name, nodes: 3});
     var host = replTest.host;

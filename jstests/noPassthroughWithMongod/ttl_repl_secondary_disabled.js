@@ -1,6 +1,8 @@
 /** Test TTL docs are not deleted from secondaries directly
  */
 
+TestData.skipCheckDBHashes = true;
+
 var rt = new ReplSetTest({name: "ttl_repl", nodes: 2});
 
 // setup set

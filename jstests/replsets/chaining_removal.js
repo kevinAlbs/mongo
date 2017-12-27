@@ -4,6 +4,8 @@
     "use strict";
     load("jstests/replsets/rslib.js");
 
+    TestData.skipCheckDBHashes = true;
+
     var numNodes = 5;
     var host = getHostName();
     var name = "chaining_removal";

@@ -8,7 +8,7 @@
  * run on ephemeral storage engines.
  * @tags: [requires_persistence]
 */
-
+TestData.skipCheckDBHashes = true;
 // Sets up a replica set and grabs things for later.
 var name = "rollback_cmd_unrollbackable";
 var replTest = new ReplSetTest({name: name, nodes: 3});

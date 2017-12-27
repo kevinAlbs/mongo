@@ -8,6 +8,8 @@
 (function() {
     'use strict';
 
+    TestData.skipCheckDBHashes = true;
+
     // Set up replica set.
     var replTest = new ReplSetTest(
         {name: 'bgIndexNoRetry', nodes: 3, nodeOptions: {noIndexBuildRetry: "", syncdelay: 1}});

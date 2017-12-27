@@ -7,6 +7,8 @@
 (function() {
     'use strict';
 
+    TestData.skipCheckDBHashes = true;
+
     load("jstests/libs/check_log.js");
     load("jstests/replsets/rslib.js");
 

@@ -8,6 +8,8 @@ replTest.initiate();
 var master = replTest.getPrimary();
 var mdb = master.getDB("test");
 
+TestData.skipCheckDBHashes = true;
+
 // synchronize replication
 assert.writeOK(mdb.foo.insert({_id: "1"}, {writeConcern: {w: 3, wtimeout: 5 * 60 * 1000}}));
 

@@ -1,7 +1,8 @@
 // Check that buildIndexes config option is working
 
 (function() {
-
+    // skip checking db hash since it also checks number of indexes
+    TestData.skipCheckDBHashes = true;
     var name = "buildIndexes";
     var host = getHostName();
 
