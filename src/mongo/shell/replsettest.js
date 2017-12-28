@@ -1621,12 +1621,22 @@ var ReplSetTest = function(opts) {
 
         // prediction: since authutil.asCluster auths for the given connections, we still need 
         // to auth for the this.liveNodes.master and this.liveNodes.slaves
-        var arr = this.nodes.slice();
-        arr.push(this.liveNodes.master);
-        arr.concat(this.liveNodes.slaves);
-        asCluster(arr, () => {
-            this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);    
-        });
+
+        let needsAuth = false;
+        // check if user is already authed.
+        let res = this.liveNodes.master.getDB("admin").runCommand({replSetGetStatus: 1});
+        if (res.ok === 0 && res.codeName === "Unauthorized") {
+            needsAuth = true;
+        }
+
+        if (needsAuth) {
+            // auth all live connections
+            asCluster([this.liveNodes.master, ...this.liveNodes.slaves], () => {
+                this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);        
+            });
+        } else {
+            this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);
+        }
     };
 
     this.checkOplogs = function(msgPrefix) {
