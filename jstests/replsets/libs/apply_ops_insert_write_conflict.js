@@ -4,6 +4,8 @@
 var ApplyOpsInsertWriteConflictTest = function(options) {
     'use strict';
 
+    TestData.skipCheckDBHashes = true; // because this test may throw write conflicts, we can't collmod
+
     if (!(this instanceof ApplyOpsInsertWriteConflictTest)) {
         return new ApplyOpsInsertWriteConflictTest(options);
     }
