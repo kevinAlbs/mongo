@@ -12,6 +12,7 @@
 
 (function() {
     "use strict";
+
     // helper function for verifying contents at the end of the test
     var checkFinalResults = function(db) {
         assert.commandWorked(db.runCommand({dbStats: 1}));
@@ -201,7 +202,6 @@
 
     // Verify data consistency between nodes.
     authutil.asCluster(replTest.nodes, 'jstests/libs/key1', function() {
-        replTest.checkReplicatedDataHashes();
         replTest.checkOplogs();
     });
 
