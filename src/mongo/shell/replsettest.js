@@ -1431,6 +1431,29 @@ var ReplSetTest = function(opts) {
             }
         }
 
+        // Returns whether or not <db>.<coll> represents a collection that is replicated.
+        // TODO: move this to replsets/libs or something?
+        function isReplicated(db, coll) {
+            if (db === 'local') {
+                return false;
+            }
+            // if it is a system collection, only certain ones are replicated
+            if (coll.indexOf("system.") === 0) {
+                const replicatedSystemCollections = [
+                    "system.backup_users",
+                    "system.js",
+                    "system.new_users",
+                    "system.roles",
+                    "system.users",
+                    "system.version",
+                    "system.views"
+                ];
+
+                return Array.contains(replicatedSystemCollections, coll);
+            }
+            return true;
+        }
+
         function checkDBHashesForReplSet(rst, dbBlacklist = [], msgPrefix, ignoreUUIDs) {
             // We don't expect the local database to match because some of its
             // collections are not replicated.
@@ -1445,6 +1468,8 @@ var ReplSetTest = function(opts) {
             var primary = rst.liveNodes.master;
             var combinedDBs = new Set(primary.getDBNames());
 
+            // TODO: change this to not use secondaries. We should still be able to validate if secondaries are down.
+            // if primaries are down. we should skip.
             rst.getSecondaries().forEach(secondary => {
                 secondary.getDBNames().forEach(dbName => combinedDBs.add(dbName));
             });
@@ -1456,10 +1481,12 @@ var ReplSetTest = function(opts) {
 
                 var dbHashes = rst.getHashes(dbName);
                 var primaryDBHash = dbHashes.master;
+                var primaryCollections = Object.keys(primaryDBHash.collections);
                 assert.commandWorked(primaryDBHash);
 
                 try {
-                    var primaryCollInfo = primary.getDB(dbName).getCollectionInfos();
+                    // Filter only collections that were retrieved by the dbhash. listCollections may include non-replicated collections like systemm.profile
+                    var primaryCollInfo = primary.getDB(dbName).getCollectionInfos().filter((info) => Array.contains(primaryCollections, info.name));
                 } catch (e) {
                     if (jsTest.options().skipValidationOnInvalidViewDefinitions) {
                         assert.commandFailedWithCode(e, ErrorCodes.InvalidViewDefinition);
@@ -1475,8 +1502,6 @@ var ReplSetTest = function(opts) {
                     assert.commandWorked(secondaryDBHash);
 
                     var secondary = secondaryDBHash._mongo;
-
-                    var primaryCollections = Object.keys(primaryDBHash.collections);
                     var secondaryCollections = Object.keys(secondaryDBHash.collections);
 
                     if (primaryCollections.length !== secondaryCollections.length) {
@@ -1511,7 +1536,7 @@ var ReplSetTest = function(opts) {
 
                     // Check that collection information is consistent on the primary and
                     // secondaries.
-                    var secondaryCollInfo = secondary.getDB(dbName).getCollectionInfos();
+                    var secondaryCollInfo = secondary.getDB(dbName).getCollectionInfos().filter((info) => Array.contains(secondaryCollections, info.name));
                     secondaryCollInfo.forEach(secondaryInfo => {
                         primaryCollInfo.forEach(primaryInfo => {
                             if (secondaryInfo.name === primaryInfo.name &&
@@ -1944,8 +1969,7 @@ var ReplSetTest = function(opts) {
         // Check to make sure data is the same on all nodes.
         // To skip this check add TestData.skipCheckDBHashes = true;
         if (!jsTest.options().skipCheckDBHashes) {
-            _callIsMaster(); // need to update liveNodes
-            if (this.liveNodes.master !== null) {
+            if (_callIsMaster()) {
                 this.checkReplicatedDataHashes();
             }
         }
