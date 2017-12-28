@@ -9,6 +9,7 @@
 
 (function() {
     "use strict";
+    
     var name = "electionNotBlocked";
     var replTest = new ReplSetTest({name: name, nodes: 3});
     var host = replTest.host;

@@ -8,6 +8,9 @@
 (function() {
     'use strict';
 
+    // Skip dbhash check because secondary will have different number of indexes.
+    TestData.skipCheckDBHashes = true;
+
     // Set up replica set.
     var replTest = new ReplSetTest(
         {name: 'bgIndexNoRetry', nodes: 3, nodeOptions: {noIndexBuildRetry: "", syncdelay: 1}});

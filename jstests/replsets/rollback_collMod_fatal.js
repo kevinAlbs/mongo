@@ -9,6 +9,8 @@
  * @tags: [requires_persistence]
  */
 
+TestData.skipCheckDBHashes = true;
+
 // Sets up a replica set and grabs things for later.
 var name = "rollback_collMod_fatal";
 var replTest = new ReplSetTest({name: name, nodes: 3});

@@ -1,7 +1,8 @@
 // Check that buildIndexes config option is working
 
 (function() {
-
+    // Skip dbhash check because secondary will have different number of indexes.
+    TestData.skipCheckDBHashes = true;
     var name = "buildIndexes";
     var host = getHostName();
 

@@ -4,6 +4,8 @@
 function testInitialSyncAbortsWithUnsupportedAuthSchema(schema) {
     'use strict';
 
+    TestData.skipCheckDBHashes = true;
+
     load("jstests/replsets/rslib.js");  // For reInitiateWithoutThrowingOnAbortedMember
 
     // Create a replica set with one data-bearing node and one arbiter to

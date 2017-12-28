@@ -1445,7 +1445,7 @@ var ReplSetTest = function(opts) {
             var primary = rst.liveNodes.master;
             var combinedDBs = new Set(primary.getDBNames());
 
-            rst.getSecondaries().forEach(secondary => {
+            rst.liveNodes.slaves.forEach(secondary => {
                 secondary.getDBNames().forEach(dbName => combinedDBs.add(dbName));
             });
 
@@ -1456,10 +1456,15 @@ var ReplSetTest = function(opts) {
 
                 var dbHashes = rst.getHashes(dbName);
                 var primaryDBHash = dbHashes.master;
+                var primaryCollections = Object.keys(primaryDBHash.collections);
                 assert.commandWorked(primaryDBHash);
 
                 try {
-                    var primaryCollInfo = primary.getDB(dbName).getCollectionInfos();
+                    // Filter only collections that were retrieved by the dbhash. listCollections may include
+                    // non-replicated collections like systemm.profile
+                    var primaryCollInfo = primary.getDB(dbName).getCollectionInfos().filter(
+                        (info) => Array.contains(primaryCollections, info.name));
+
                 } catch (e) {
                     if (jsTest.options().skipValidationOnInvalidViewDefinitions) {
                         assert.commandFailedWithCode(e, ErrorCodes.InvalidViewDefinition);
@@ -1475,8 +1480,6 @@ var ReplSetTest = function(opts) {
                     assert.commandWorked(secondaryDBHash);
 
                     var secondary = secondaryDBHash._mongo;
-
-                    var primaryCollections = Object.keys(primaryDBHash.collections);
                     var secondaryCollections = Object.keys(secondaryDBHash.collections);
 
                     if (primaryCollections.length !== secondaryCollections.length) {
@@ -1509,9 +1512,10 @@ var ReplSetTest = function(opts) {
 
                     });
 
-                    // Check that collection information is consistent on the primary and
-                    // secondaries.
-                    var secondaryCollInfo = secondary.getDB(dbName).getCollectionInfos();
+                    // Check that collection information is consistent on the primary and secondaries.
+                    var secondaryCollInfo = secondary.getDB(dbName).getCollectionInfos().filter(
+                        (info) => Array.contains(secondaryCollections, info.name));
+
                     secondaryCollInfo.forEach(secondaryInfo => {
                         primaryCollInfo.forEach(primaryInfo => {
                             if (secondaryInfo.name === primaryInfo.name &&
@@ -1592,7 +1596,21 @@ var ReplSetTest = function(opts) {
             assert(success, 'dbhash mismatch between primary and secondary');
         }
 
-        this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);
+        let needsAuth = false;
+        // check if connections need to be authenticated
+        let res = this.liveNodes.master.getDB("admin").runCommand({replSetGetStatus: 1});
+        if (res.ok === 0 && res.codeName === "Unauthorized") {
+            needsAuth = true;
+        }
+
+        if (needsAuth) {
+            // auth all live connections
+            asCluster([this.liveNodes.master, ...this.liveNodes.slaves], () => {
+                this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);
+            });
+        } else {
+            this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);
+        }
     };
 
     this.checkOplogs = function(msgPrefix) {
@@ -1939,6 +1957,15 @@ var ReplSetTest = function(opts) {
      * @param {Object} opts @see MongoRunner.stopMongod
      */
     this.stopSet = function(signal, forRestart, opts) {
+        // Check to make sure data is the same on all nodes.
+        // To skip this check add TestData.skipCheckDBHashes = true;
+        if (!jsTest.options().skipCheckDBHashes) {
+            if (this.nodes.length > 1) { // skip for single ndoe replsets
+                if (_callIsMaster()) {
+                    this.checkReplicatedDataHashes();
+                }
+            }
+        }
         for (var i = 0; i < this.ports.length; i++) {
             this.stop(i, signal, opts);
         }
