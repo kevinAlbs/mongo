@@ -1619,7 +1619,12 @@ var ReplSetTest = function(opts) {
             assert(success, 'dbhash mismatch between primary and secondary');
         }
 
-        asCluster(this.nodes, () => {
+        // prediction: since authutil.asCluster auths for the given connections, we still need 
+        // to auth for the this.liveNodes.master and this.liveNodes.slaves
+        var arr = this.nodes.slice();
+        arr.push(this.liveNodes.master);
+        arr.concat(this.liveNodes.slaves);
+        asCluster(arr, () => {
             this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);    
         });
     };
@@ -1971,8 +1976,10 @@ var ReplSetTest = function(opts) {
         // Check to make sure data is the same on all nodes.
         // To skip this check add TestData.skipCheckDBHashes = true;
         if (!jsTest.options().skipCheckDBHashes) {
-            if (_callIsMaster()) {
-                this.checkReplicatedDataHashes();
+            if (this.nodes.length > 1) { // skip for single ndoe replsets
+                if (_callIsMaster()) {
+                    this.checkReplicatedDataHashes();
+                }
             }
         }
         for (var i = 0; i < this.ports.length; i++) {
