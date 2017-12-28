@@ -143,7 +143,9 @@ var ReplSetTest = function(opts) {
     }
 
     function asCluster(conn, fn) {
+        jsTest.log("ReplSetTest::asCluster called");
         if (self.keyFile) {
+            jsTest.log(`and there is a keyfile ${self.keyFile}`);
             return authutil.asCluster(conn, self.keyFile, fn);
         } else {
             return fn();
@@ -1468,9 +1470,9 @@ var ReplSetTest = function(opts) {
             var primary = rst.liveNodes.master;
             var combinedDBs = new Set(primary.getDBNames());
 
-            // TODO: change this to not use secondaries. We should still be able to validate if secondaries are down.
-            // if primaries are down. we should skip.
-            rst.getSecondaries().forEach(secondary => {
+            // TODO: change this to not use secondaries. We should still be able to validate
+            // if some secondaries are down as long as a primary is up.
+            rst.liveNodes.slaves.forEach(secondary => {
                 secondary.getDBNames().forEach(dbName => combinedDBs.add(dbName));
             });
 
