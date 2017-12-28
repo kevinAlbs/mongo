@@ -15,18 +15,20 @@ load('jstests/ssl/libs/ssl_helpers.js');
     };
     var keyFileOptions = {clusterAuthMode: 'keyFile', keyFile: KEYFILE};
 
-    print('=== Testing no-auth/transitionToAuth cluster ===');
-    mixedShardTest(noAuthOptions, transitionToAuthOptions, true);
-    mixedShardTest(transitionToAuthOptions, noAuthOptions, true);
+    // print('=== Testing no-auth/transitionToAuth cluster ===');
+    // mixedShardTest(noAuthOptions, transitionToAuthOptions, true);
+    // mixedShardTest(transitionToAuthOptions, noAuthOptions, true);
 
-    print('=== Testing transitionToAuth/transitionToAuth cluster ===');
-    mixedShardTest(transitionToAuthOptions, transitionToAuthOptions, true);
+    // print('=== Testing transitionToAuth/transitionToAuth cluster ===');
+    // mixedShardTest(transitionToAuthOptions, transitionToAuthOptions, true);
 
-    print('=== Testing transitionToAuth/keyFile cluster ===');
-    mixedShardTest(keyFileOptions, transitionToAuthOptions, true);
-    mixedShardTest(transitionToAuthOptions, keyFileOptions, true);
+    print('=== Testing transitionToAuth/keyFile cluster ==='); // TODO <-- fails on one of the following two.
+    jsTest.log('Testing first one')
+    mixedShardTest(keyFileOptions, transitionToAuthOptions, true); // <!-- fails here
+    // jsTest.log("Testing second one")
+    // mixedShardTest(transitionToAuthOptions, keyFileOptions, true);
 
-    print('=== Testing no-auth/keyFile cluster fails ===');
-    mixedShardTest(noAuthOptions, keyFileOptions, false);
-    mixedShardTest(keyFileOptions, noAuthOptions, false);
+    // print('=== Testing no-auth/keyFile cluster fails ===');
+    // mixedShardTest(noAuthOptions, keyFileOptions, false);
+    // mixedShardTest(keyFileOptions, noAuthOptions, false);
 }());

@@ -4,6 +4,8 @@ load("jstests/replsets/rslib.js");
  * Test for making sure that the replica seed list in the config server does not
  * become invalid when a replica set reconfig happens.
  */
+
+ TestData.skipCheckDBHashes = true; // b/c the removed node has wrong config and is still alive.
 (function() {
     "use strict";
 

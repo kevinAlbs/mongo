@@ -27,6 +27,8 @@ load("jstests/libs/write_concern_util.js");
 (function() {
     "use strict";
 
+    TestData.skipCheckDBHashes = true; // b/c this partitions
+
     var testName = "linearizable_read_concern";
 
     var st = new ShardingTest({
