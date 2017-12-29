@@ -1460,8 +1460,8 @@ var ReplSetTest = function(opts) {
                 assert.commandWorked(primaryDBHash);
 
                 try {
-                    // Filter only collections that were retrieved by the dbhash. listCollections may include
-                    // non-replicated collections like systemm.profile
+                    // Filter only collections that were retrieved by the dbhash. listCollections
+                    // may include non-replicated collections like system.profile
                     var primaryCollInfo = primary.getDB(dbName).getCollectionInfos().filter(
                         (info) => Array.contains(primaryCollections, info.name));
 
@@ -1512,7 +1512,8 @@ var ReplSetTest = function(opts) {
 
                     });
 
-                    // Check that collection information is consistent on the primary and secondaries.
+                    // Check that collection information is consistent on the primary and
+                    // secondaries.
                     var secondaryCollInfo = secondary.getDB(dbName).getCollectionInfos().filter(
                         (info) => Array.contains(secondaryCollections, info.name));
 
@@ -1947,15 +1948,16 @@ var ReplSetTest = function(opts) {
         if (!jsTest.options().skipCheckDBHashes) {
             // To skip this check add TestData.skipCheckDBHashes = true;
             // Reasons to skip this test include:
-            // - the primary will be down and non can be elected (so fsync lock/unlock commands fail)
-            // - the replica set is in an unrecoverable inconsistent state, i.e. awaitReplication would fail.
-            //   E.g. the replica set is partitioned.
-            if (this.nodes.length > 1) { // skip for single node replsets
+            // - the primary goes down and non can be elected (so fsync lock/unlock commands fail)
+            // - the replica set is in an unrecoverable inconsistent state. E.g. the replica set
+            //   is partitioned.
+            //
+            if (this.nodes.length > 1) {  // skip for single node replsets
                 if (_callIsMaster()) {
                     // Auth only on live nodes because authutil.assertAuthenticate
                     // refuses to log in live connections if some secondaries are down.
                     asCluster([this.liveNodes.master, ...this.liveNodes.slaves],
-                        () => this.checkReplicatedDataHashes());
+                              () => this.checkReplicatedDataHashes());
                 }
             }
         }
