@@ -1596,21 +1596,7 @@ var ReplSetTest = function(opts) {
             assert(success, 'dbhash mismatch between primary and secondary');
         }
 
-        let needsAuth = false;
-        // check if connections need to be authenticated
-        let res = this.liveNodes.master.getDB("admin").runCommand({replSetGetStatus: 1});
-        if (res.ok === 0 && res.codeName === "Unauthorized") {
-            needsAuth = true;
-        }
-
-        if (needsAuth) {
-            // auth all live connections
-            asCluster([this.liveNodes.master, ...this.liveNodes.slaves], () => {
-                this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);
-            });
-        } else {
-            this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);
-        }
+        this.checkReplicaSet(checkDBHashesForReplSet, this, excludedDBs, msgPrefix, ignoreUUIDs);
     };
 
     this.checkOplogs = function(msgPrefix) {
@@ -1958,11 +1944,18 @@ var ReplSetTest = function(opts) {
      */
     this.stopSet = function(signal, forRestart, opts) {
         // Check to make sure data is the same on all nodes.
-        // To skip this check add TestData.skipCheckDBHashes = true;
         if (!jsTest.options().skipCheckDBHashes) {
-            if (this.nodes.length > 1) { // skip for single ndoe replsets
+            // To skip this check add TestData.skipCheckDBHashes = true;
+            // Reasons to skip this test include:
+            // - the primary will be down and non can be elected (so fsync lock/unlock commands fail)
+            // - the replica set is in an unrecoverable inconsistent state, i.e. awaitReplication would fail.
+            //   E.g. the replica set is partitioned.
+            if (this.nodes.length > 1) { // skip for single node replsets
                 if (_callIsMaster()) {
-                    this.checkReplicatedDataHashes();
+                    // Auth only on live nodes because authutil.assertAuthenticate
+                    // refuses to log in live connections if some secondaries are down.
+                    asCluster([this.liveNodes.master, ...this.liveNodes.slaves],
+                        () => this.checkReplicatedDataHashes());
                 }
             }
         }
