@@ -6,7 +6,7 @@
 (function() {
     "use strict";
 
-    // Skip dbhash check because of invalid index spec
+    // Skip db hash check because of invalid index spec
     TestData.skipCheckDBHashes = true;
 
     load("jstests/replsets/rslib.js");
