@@ -2,7 +2,6 @@
  * Validates the operationTime value in the command response depends on the read/writeConcern of the
  * the read/write commmand that produced it.
  */
-
 (function() {
     "use strict";
 

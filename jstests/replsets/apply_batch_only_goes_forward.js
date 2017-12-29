@@ -15,7 +15,7 @@
  * @tags: [requires_persistence]
  */
 
-// Skip dbhash check because replset cannot reach consistent state
+// Skip db hash check because replset cannot reach consistent state
 TestData.skipCheckDBHashes = true;
 
 (function() {

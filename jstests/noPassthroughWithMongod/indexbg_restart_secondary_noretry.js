@@ -8,7 +8,7 @@
 (function() {
     'use strict';
 
-    // Skip dbhash check because secondary will have different number of indexes.
+    // Skip db hash check because secondary will have different number of indexes.
     TestData.skipCheckDBHashes = true;
 
     // Set up replica set.

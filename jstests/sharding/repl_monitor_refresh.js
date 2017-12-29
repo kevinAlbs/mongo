@@ -4,10 +4,11 @@ load("jstests/replsets/rslib.js");
  * Test for making sure that the replica seed list in the config server does not
  * become invalid when a replica set reconfig happens.
  */
-
- TestData.skipCheckDBHashes = true; // b/c the removed node has wrong config and is still alive.
 (function() {
     "use strict";
+
+    // skip db hash check since the removed node has wrong config and is still alive.
+    TestData.skipCheckDBHashes = true;
 
     var NODE_COUNT = 3;
     var st = new ShardingTest({shards: {rs0: {nodes: NODE_COUNT, oplogSize: 10}}});

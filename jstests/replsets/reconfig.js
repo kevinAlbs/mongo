@@ -4,7 +4,6 @@
  */
 (function() {
     "use strict";
-
     var numNodes = 5;
     var replTest = new ReplSetTest({name: 'testSet', nodes: numNodes});
     var nodes = replTest.startSet();

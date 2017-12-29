@@ -12,7 +12,6 @@
 
 (function() {
     "use strict";
-
     // helper function for verifying contents at the end of the test
     var checkFinalResults = function(db) {
         assert.commandWorked(db.runCommand({dbStats: 1}));
