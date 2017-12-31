@@ -1,10 +1,10 @@
-/*
 function _rawCommandReplyWorked(raw) {
     // response is plain JS object.
     if (raw.ok === 0) {
         return false;
     }
 
+    // a write command response may have ok:1 but write errors
     if (raw.hasOwnProperty("writeErrors") && raw.writeErrors.length > 0) {
         return false;
     }
@@ -12,7 +12,7 @@ function _rawCommandReplyWorked(raw) {
     return true;
 }
 
-assert.commandWorked2 = function(res, msg) {
+assert.commandWorked = function(res, msg) {
     if (assert._debug && msg) {
         print("in assert for: " + msg);
     }
@@ -21,15 +21,21 @@ assert.commandWorked2 = function(res, msg) {
         doassert("unknown response given to commandWorked")
     }
 
+    // TODO: it's weird to use MapReduceResult here. I could modify the wrapper. But meh.
     if (res.constructor === Object) {
         // response is plain JS object
         if (!_rawCommandReplyWorked(res)) {
             doassert("command failed: " + tojson(res) + " : " + msg, res);
         }
     }
-    else if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof
-WriteCommandError) {
+    else if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof WriteCommandError) {
         assert.writeOK(res, msg);
+    }
+    else if (res instanceof MapReduceResult) {
+        // MapReduceResult won't have writeErrors.
+        if (res.ok === 0) {
+            doassert("mapReduce failed: " + tojson(res) + " : " + msg, res);
+        }
     }
     else {
         doassert("unknown type of result, cannot check ok: " + tojson(res) + " : " + msg, res);
@@ -37,7 +43,7 @@ WriteCommandError) {
     return res;
 };
 
-assert.commandFailed2 = function(res, msg) {
+assert.commandFailed = function(res, msg) {
     if (assert._debug && msg) {
         print("in assert for: " + msg);
     }
@@ -49,13 +55,17 @@ assert.commandFailed2 = function(res, msg) {
     if (res.constructor === Object) {
         // response is plain JS object
         if (_rawCommandReplyWorked(res)) {
-            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg,
-res);
+            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg, res);
         }
     }
-    else if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof
-WriteCommandError) {
+    else if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof WriteCommandError) {
         assert.writeError(res, msg);
+    }
+    else if (res instanceof MapReduceResult) {
+        // MapReduceResult won't have writeErrors.
+        if (res.ok === 1) {
+            doassert("mapReduce worked when it should have failed: " + tojson(res) + " : " + msg, res);
+        }
     }
     else {
         doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg, res);
@@ -64,7 +74,7 @@ WriteCommandError) {
 };
 
 // expectedCode can be an array of possible codes
-assert.commandFailedWithCode2 = function(res, expectedCode, msg) {
+assert.commandFailedWithCode = function(res, expectedCode, msg) {
     if (assert._debug && msg) {
         print("in assert for: " + msg);
     }
@@ -73,14 +83,14 @@ assert.commandFailedWithCode2 = function(res, expectedCode, msg) {
         doassert("unknown response given to commandWorked")
     }
 
-    if (res.constructor === Object) {
-        if (!Array.isArray(expectedCode)) {
-            expectedCode = [expectedCode];
-        }
+    if (!Array.isArray(expectedCode)) {
+        expectedCode = [expectedCode];
+    }
+
+    if (res.constructor === Object || res instanceof MapReduceResult) {
         // response is plain JS object
         if (_rawCommandReplyWorked(res)) {
-            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg,
-res);
+            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg, res);
         }
         let foundCode = false;
         if (res.hasOwnProperty("code") && expectedCode.indexOf(res.code) !== -1) {
@@ -89,20 +99,26 @@ res);
             foundCode = res.writeErrors.some((err) => expectedCode.indexOf(err.code) !== -1);
         }
         if (!foundCode) {
-            doassert("command did not fail with code " + expectedCode + tojson(res) + " : " + msg,
-res)
+            doassert("command did not fail with code " + expectedCode + tojson(res) + " : " + msg, res)
         }
     }
-    else if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof
-WriteCommandError) {
+    else if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof WriteCommandError) {
         assert.writeErrorWithCode(res, expectedCode, msg);
+    }
+    else if (res instanceof MapReduceResult) {
+        // MapReduceResult won't have writeErrors.
+        if (res.ok === 1) {
+            doassert("mapReduce worked when it should have failed: " + tojson(res) + " : " + msg, res);
+        }
+        if (expectedCode.indexOf(res.code) === -1) {
+            doassert("mapReduce did not fail with code " + expectedCode + tojson(res) + " : " + msg, res);
+        }
     }
     else {
         doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg, res);
     }
     return res;
 };
-*/
 
 jsTest.log("start");
 db = db.getSiblingDB("commandAssertions");
@@ -116,70 +132,96 @@ function setup() {
 function rawCommandOk() {
     setup();
     let res = db.runCommand({"ping": 1});
-    assert.doesNotThrow(() => assert.commandWorked2(res));
-    assert.throws(() => assert.commandFailed2(res));
-    assert.throws(() => assert.commandFailedWithCode2(res, 0));
+    assert.doesNotThrow(() => assert.commandWorked(res));
+    assert.throws(() => assert.commandFailed(res));
+    assert.throws(() => assert.commandFailedWithCode(res, 0));
 }
 
 function rawCommandErr() {
     setup();
     let res = db.runCommand({"IHopeNobodyEverMakesThisACommand": 1});
-    assert.throws(() => assert.commandWorked2(res));
-    assert.doesNotThrow(() => assert.commandFailed2(res));
-    assert.doesNotThrow(() => assert.commandFailedWithCode2(res, 59));
+    assert.throws(() => assert.commandWorked(res));
+    assert.doesNotThrow(() => assert.commandFailed(res));
+    assert.doesNotThrow(() => assert.commandFailedWithCode(res, 59));
 }
 
 function rawCommandWriteOk() {
     setup();
     let res = db.runCommand({insert: "coll", documents: [{_id: 2}]});
-    assert.doesNotThrow(() => assert.commandWorked2(res));
-    assert.throws(() => assert.commandFailed2(res));
-    assert.throws(() => assert.commandFailedWithCode2(res, 0));
+    assert.doesNotThrow(() => assert.commandWorked(res));
+    assert.throws(() => assert.commandFailed(res));
+    assert.throws(() => assert.commandFailedWithCode(res, 0));
 }
 
 function rawCommandWriteErr() {
     setup();
     let res = db.runCommand({insert: "coll", documents: [{_id: 1}]});
-    assert.throws(() => assert.commandWorked2(res));
-    assert.doesNotThrow(() => assert.commandFailed2(res));
-    assert.doesNotThrow(() => assert.commandFailedWithCode2(res, 11000));
+    assert.throws(() => assert.commandWorked(res));
+    assert.doesNotThrow(() => assert.commandFailed(res));
+    assert.doesNotThrow(() => assert.commandFailedWithCode(res, 11000));
 }
 
 function collWriteOk() {
     setup();
     let res = db.coll.insert({_id: 2});
     assert(res instanceof WriteResult);
-    assert.doesNotThrow(() => assert.commandWorked2(res));
-    assert.throws(() => assert.commandFailed2(res));
-    assert.throws(() => assert.commandFailedWithCode2(res, 0));
+    assert.doesNotThrow(() => assert.commandWorked(res));
+    assert.throws(() => assert.commandFailed(res));
+    assert.throws(() => assert.commandFailedWithCode(res, 0));
 }
 
 function collWriteErr() {
     setup();
     let res = db.coll.insert({_id: 1});
     assert(res instanceof WriteResult);
-    assert.throws(() => assert.commandWorked2(res));
-    assert.doesNotThrow(() => assert.commandFailed2(res));
-    assert.doesNotThrow(() => assert.commandFailedWithCode2(res, 11000));
+    assert.throws(() => assert.commandWorked(res));
+    assert.doesNotThrow(() => assert.commandFailed(res));
+    assert.doesNotThrow(() => assert.commandFailedWithCode(res, 11000));
 }
 
 function collMultiWriteOk() {
     setup();
     let res = db.coll.insert([{_id: 3}, {_id: 2}]);
     assert(res instanceof BulkWriteResult);
-    assert.doesNotThrow(() => assert.commandWorked2(res));
-    assert.throws(() => assert.commandFailed2(res));
-    assert.throws(() => assert.commandFailedWithCode2(res, 0));
+    assert.doesNotThrow(() => assert.commandWorked(res));
+    assert.throws(() => assert.commandFailed(res));
+    assert.throws(() => assert.commandFailedWithCode(res, 0));
 }
 
 function collMultiWriteErr() {
     setup();
     let res = db.coll.insert([{_id: 3}, {_id: 1}]);
     assert(res instanceof BulkWriteResult);
-    assert.throws(() => assert.commandWorked2(res));
-    assert.doesNotThrow(() => assert.commandFailed2(res));
-    assert.doesNotThrow(() => assert.commandFailedWithCode2(res, 11000));
+    assert.throws(() => assert.commandWorked(res));
+    assert.doesNotThrow(() => assert.commandFailed(res));
+    assert.doesNotThrow(() => assert.commandFailedWithCode(res, 11000));
 }
+
+function mapReduceOk() {
+    setup();
+    let res = db.coll.mapReduce(
+        function() { emit(this._id, 0)},
+        function(k, v) { return v[0]; },
+        {out: "coll_out"});
+    assert.doesNotThrow(() => assert.commandWorked(res));
+    assert.throws(() => assert.commandFailed(res));
+    assert.throws(() => assert.commandFailedWithCode(res, 0));
+}
+
+function mapReduceErr() {
+    // db.coll.mapReduce throws if the command response has ok:0
+    // Instead manually construct a MapReduceResult with ok:0
+    let res = new MapReduceResult(db, {
+        "ok" : 0,
+        "errmsg" : "Example Error",
+        "code" : 139,
+        "codeName" : "JSInterpreterFailure"
+    });
+    assert.throws(() => assert.commandWorked(res));
+    assert.doesNotThrow(() => assert.commandFailed(res));
+    assert.doesNotThrow(() => assert.commandFailedWithCode(res, 139));
+}
+
 
 rawCommandOk();
 rawCommandErr();
@@ -189,5 +231,7 @@ collWriteOk();
 collWriteErr();
 collMultiWriteOk();
 collMultiWriteErr();
+mapReduceOk();
+mapReduceErr();
 
 jsTest.log("end");
