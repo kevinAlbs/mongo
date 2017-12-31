@@ -417,17 +417,16 @@ assert.commandWorked = function(res, msg) {
         doassert("unknown response given to commandWorked")
     }
 
-    if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof WriteCommandError) {
-        // For write results, even if ok:1, having writeErrors fails. 
+    if (res instanceof WriteResult || res instanceof BulkWriteResult ||
+        res instanceof WriteCommandError) {
+        // For write results, even if ok:1, having writeErrors fails.
         assert.writeOK(res, msg);
-    }
-    else if (res.hasOwnProperty("ok")) {
+    } else if (res.hasOwnProperty("ok")) {
         // Handle raw command responses or cases like MapReduceResult which extend command response.
         if (!_rawCommandReplyWorked(res)) {
             doassert("command failed: " + tojson(res) + " : " + msg, res);
         }
-    }
-    else {
+    } else {
         doassert("unknown type of result, cannot check ok: " + tojson(res) + " : " + msg, res);
     }
     return res;
@@ -446,8 +445,7 @@ assert.commandWorkedIgnoringWriteErrors = function(res, msg) {
         if (res.ok === 0) {
             doassert("command failed: " + tojson(res) + " : " + msg, res);
         }
-    }
-    else {
+    } else {
         doassert("unknown type of result, cannot check ok: " + tojson(res) + " : " + msg, res);
     }
     return res;
@@ -462,15 +460,15 @@ assert.commandFailed = function(res, msg) {
         doassert("unknown response given to commandFailed")
     }
 
-    if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof WriteCommandError) {
+    if (res instanceof WriteResult || res instanceof BulkWriteResult ||
+        res instanceof WriteCommandError) {
         assert.writeError(res, msg);
-    }
-    else if (res.hasOwnProperty("ok")) {
+    } else if (res.hasOwnProperty("ok")) {
         if (_rawCommandReplyWorked(res)) {
-            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg, res);
+            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg,
+                     res);
         }
-    }
-    else {
+    } else {
         doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg, res);
     }
     return res;
@@ -490,25 +488,25 @@ assert.commandFailedWithCode = function(res, expectedCode, msg) {
         expectedCode = [expectedCode];
     }
 
-    if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof WriteCommandError) {
+    if (res instanceof WriteResult || res instanceof BulkWriteResult ||
+        res instanceof WriteCommandError) {
         assert.writeErrorWithCode(res, expectedCode, msg);
-    }
-    else if (res.hasOwnProperty("ok")) {
+    } else if (res.hasOwnProperty("ok")) {
         if (_rawCommandReplyWorked(res)) {
-            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg, res);
+            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg,
+                     res);
         }
         let foundCode = false;
         if (res.hasOwnProperty("code") && expectedCode.indexOf(res.code) !== -1) {
             foundCode = true;
-        }
-        else if (res.hasOwnProperty("writeErrors")) {
+        } else if (res.hasOwnProperty("writeErrors")) {
             foundCode = res.writeErrors.some((err) => expectedCode.indexOf(err.code) !== -1);
         }
         if (!foundCode) {
-            doassert("command did not fail with code " + expectedCode + tojson(res) + " : " + msg, res)
+            doassert("command did not fail with code " + expectedCode + tojson(res) + " : " + msg,
+                     res)
         }
-    }
-    else {
+    } else {
         doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg, res);
     }
     return res;

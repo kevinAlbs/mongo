@@ -22,8 +22,9 @@ assert.commandWorked = function(res, msg) {
         doassert("unknown response given to commandWorked")
     }
 
-    if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof WriteCommandError) {
-        // For write results, even if ok:1, having writeErrors fails. 
+    if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof
+WriteCommandError) {
+        // For write results, even if ok:1, having writeErrors fails.
         assert.writeOK(res, msg);
     }
     else if (res.hasOwnProperty("ok")) {
@@ -67,12 +68,14 @@ assert.commandFailed = function(res, msg) {
         doassert("unknown response given to commandFailed")
     }
 
-    if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof WriteCommandError) {
+    if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof
+WriteCommandError) {
         assert.writeError(res, msg);
     }
     else if (res.hasOwnProperty("ok")) {
         if (_rawCommandReplyWorked(res)) {
-            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg, res);
+            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg,
+res);
         }
     }
     else {
@@ -95,12 +98,14 @@ assert.commandFailedWithCode = function(res, expectedCode, msg) {
         expectedCode = [expectedCode];
     }
 
-    if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof WriteCommandError) {
+    if (res instanceof WriteResult || res instanceof BulkWriteResult || res instanceof
+WriteCommandError) {
         assert.writeErrorWithCode(res, expectedCode, msg);
     }
     else if (res.hasOwnProperty("ok")) {
         if (_rawCommandReplyWorked(res)) {
-            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg, res);
+            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg,
+res);
         }
         let foundCode = false;
         if (res.hasOwnProperty("code") && expectedCode.indexOf(res.code) !== -1) {
@@ -110,7 +115,8 @@ assert.commandFailedWithCode = function(res, expectedCode, msg) {
             foundCode = res.writeErrors.some((err) => expectedCode.indexOf(err.code) !== -1);
         }
         if (!foundCode) {
-            doassert("command did not fail with code " + expectedCode + tojson(res) + " : " + msg, res)
+            doassert("command did not fail with code " + expectedCode + tojson(res) + " : " + msg,
+res)
         }
     }
     else {
@@ -208,8 +214,12 @@ function collMultiWriteErr() {
 function mapReduceOk() {
     setup();
     let res = db.coll.mapReduce(
-        function() { emit(this._id, 0)},
-        function(k, v) { return v[0]; },
+        function() {
+            emit(this._id, 0)
+        },
+        function(k, v) {
+            return v[0];
+        },
         {out: "coll_out"});
     assert.doesNotThrow(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
@@ -220,12 +230,8 @@ function mapReduceOk() {
 function mapReduceErr() {
     // db.coll.mapReduce throws if the command response has ok:0
     // Instead manually construct a MapReduceResult with ok:0
-    let res = new MapReduceResult(db, {
-        "ok" : 0,
-        "errmsg" : "Example Error",
-        "code" : 139,
-        "codeName" : "JSInterpreterFailure"
-    });
+    let res = new MapReduceResult(
+        db, {"ok": 0, "errmsg": "Example Error", "code": 139, "codeName": "JSInterpreterFailure"});
     assert.throws(() => assert.commandWorked(res));
     assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
