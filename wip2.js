@@ -59,6 +59,7 @@ assert.commandFailed2 = function(res, msg) {
     return res;
 };
 
+// expectedCode can be an array of possible codes
 assert.commandFailedWithCode2 = function(res, expectedCode, msg) {
     if (assert._debug && msg) {
         print("in assert for: " + msg);
@@ -69,15 +70,18 @@ assert.commandFailedWithCode2 = function(res, expectedCode, msg) {
     }
 
     if (res.constructor === Object) {
+        if (!Array.isArray(expectedCode)) {
+            expectedCode = [expectedCode];
+        }
         // response is plain JS object
         if (_rawCommandReplyWorked(res)) {
             doassert("command worked when it should have failed: " + tojson(res) + " : " + msg, res);
         }
         let foundCode = false;
-        if (res.hasOwnProperty("code") && res.code === expectedCode) {
+        if (res.hasOwnProperty("code") && expectedCode.indexOf(res.code) !== -1) {
             foundCode = true;
         } else if (res.hasOwnProperty("writeErrors")) {
-            foundCode = res.writeErrors.some((err) => err.code === expectedCode);
+            foundCode = res.writeErrors.some((err) => expectedCode.indexOf(err.code) !== -1);
         }
         if (!foundCode) {
             doassert("command did not fail with code " + expectedCode + tojson(res) + " : " + msg, res)
@@ -92,12 +96,6 @@ assert.commandFailedWithCode2 = function(res, expectedCode, msg) {
     return res;
 };
 
-// Test out a variety of different failure cases.
-
-// Unfortunately doassert prints
-
-// Raw command responses.
-
 jsTest.log("start");
 db = db.getSiblingDB("commandAssertions");
 
@@ -106,6 +104,7 @@ function setup() {
     db.coll.insert({_id: 1});
 }
 
+// Raw command responses.
 function rawCommandOk() {
     setup();
     let res = db.runCommand({"ping": 1});
