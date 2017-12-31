@@ -394,38 +394,101 @@ assert.doesNotThrow.automsg = function(func, params) {
     assert.doesNotThrow(func, params, func.toString());
 };
 
-assert.commandWorked = function(res, msg) {
-    if (assert._debug && msg)
-        print("in assert for: " + msg);
+function _rawCommandReplyWorked(raw) {
+    // response is plain JS object.
+    if (raw.ok === 0) {
+        return false;
+    }
 
-    if (res.ok == 1)
-        return res;
-    doassert("command failed: " + tojson(res) + " : " + msg, res);
+    if (raw.hasOwnProperty("writeErrors") && raw.writeErrors.length > 0) {
+        return false;
+    }
+
+    return true;
+}
+
+assert.commandWorked = function(res, msg) {
+    if (assert._debug && msg) {
+        print("in assert for: " + msg);
+    }
+
+    if (typeof(res) !== "object") {
+        doassert("unknown response given to commandWorked")
+    }
+
+    if (res.constructor === Object) {
+        // response is plain JS object
+        if (!_rawCommandReplyWorked(res)) {
+            doassert("command failed: " + tojson(res) + " : " + msg, res);
+        }
+    } else if (res instanceof WriteResult || res instanceof BulkWriteResult ||
+               res instanceof WriteCommandError) {
+        assert.writeOK(res, msg);
+    } else {
+        doassert("unknown type of result, cannot check ok: " + tojson(res) + " : " + msg, res);
+    }
+    return res;
 };
 
 assert.commandFailed = function(res, msg) {
-    if (assert._debug && msg)
+    if (assert._debug && msg) {
         print("in assert for: " + msg);
-
-    if (res.ok == 0)
-        return res;
-    doassert("command worked when it should have failed: " + tojson(res) + " : " + msg);
-};
-
-assert.commandFailedWithCode = function(res, code, msg) {
-    if (assert._debug && msg)
-        print("in assert for: " + msg);
-
-    if (!Array.isArray(code)) {
-        code = [code];
     }
 
-    assert(!res.ok,
-           "Command result indicates success, but expected failure with code " + tojson(code) +
-               ": " + tojson(res) + " : " + msg);
-    assert(code.indexOf(res.code) >= 0,
-           "Expected failure code " + tojson(code) + " did not match actual in command result: " +
-               tojson(res) + " : " + msg);
+    if (typeof(res) !== "object") {
+        doassert("unknown response given to commandWorked")
+    }
+
+    if (res.constructor === Object) {
+        // response is plain JS object
+        if (_rawCommandReplyWorked(res)) {
+            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg,
+                     res);
+        }
+    } else if (res instanceof WriteResult || res instanceof BulkWriteResult ||
+               res instanceof WriteCommandError) {
+        assert.writeError(res, msg);
+    } else {
+        doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg, res);
+    }
+    return res;
+};
+
+// expectedCode can be an array of possible codes
+assert.commandFailedWithCode = function(res, expectedCode, msg) {
+    if (assert._debug && msg) {
+        print("in assert for: " + msg);
+    }
+
+    if (typeof(res) !== "object") {
+        doassert("unknown response given to commandWorked")
+    }
+
+    if (res.constructor === Object) {
+        if (!Array.isArray(expectedCode)) {
+            expectedCode = [expectedCode];
+        }
+        // response is plain JS object
+        if (_rawCommandReplyWorked(res)) {
+            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg,
+                     res);
+        }
+        let foundCode = false;
+        if (res.hasOwnProperty("code") && expectedCode.indexOf(res.code) !== -1) {
+            foundCode = true;
+        } else if (res.hasOwnProperty("writeErrors")) {
+            foundCode = res.writeErrors.some((err) => expectedCode.indexOf(err.code) !== -1);
+        }
+        if (!foundCode) {
+            doassert("command did not fail with code " + expectedCode + tojson(res) + " : " + msg,
+                     res)
+        }
+    } else if (res instanceof WriteResult || res instanceof BulkWriteResult ||
+               res instanceof WriteCommandError) {
+        assert.writeErrorWithCode(res, expectedCode, msg);
+    } else {
+        doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg, res);
+    }
     return res;
 };
 
