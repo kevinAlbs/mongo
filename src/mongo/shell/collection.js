@@ -402,8 +402,10 @@ DBCollection.prototype.remove = function(t, justOne) {
         try {
             result = bulk.execute(wc).toSingleResult();
         } catch (ex) {
-            if (ex instanceof BulkWriteError || ex instanceof WriteCommandError) {
+            if (ex instanceof BulkWriteError) {
                 result = ex.toSingleResult();
+            } else if (ex instanceof WriteCommandError) {
+                result = ex;
             } else {
                 // Other exceptions thrown
                 throw Error(ex);
@@ -514,8 +516,10 @@ DBCollection.prototype.update = function(query, obj, upsert, multi) {
         try {
             result = bulk.execute(wc).toSingleResult();
         } catch (ex) {
-            if (ex instanceof BulkWriteError || ex instanceof WriteCommandError) {
+            if (ex instanceof BulkWriteError) {
                 result = ex.toSingleResult();
+            } else if (ex instanceof WriteCommandError) {
+                result = ex;
             } else {
                 // Other exceptions thrown
                 throw Error(ex);

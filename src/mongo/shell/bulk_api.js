@@ -1202,6 +1202,7 @@ var _bulk_api_module = (function() {
     module.BulkWriteResult = BulkWriteResult;
     module.BulkWriteError = BulkWriteError;
     module.WriteCommandError = WriteCommandError;
+    module.WriteError = WriteError;
     module.initializeUnorderedBulkOp = function() {
         return new Bulk(this, false);
     };
@@ -1219,6 +1220,7 @@ WriteResult = _bulk_api_module.WriteResult;
 BulkWriteResult = _bulk_api_module.BulkWriteResult;
 BulkWriteError = _bulk_api_module.BulkWriteError;
 WriteCommandError = _bulk_api_module.WriteCommandError;
+WriteError = _bulk_api_module.WriteError;
 
 /***********************************************************
  * Adds the initializers of bulk operations to the db collection
