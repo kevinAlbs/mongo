@@ -408,6 +408,11 @@ function _rawCommandReplyWorked(raw) {
     return true;
 }
 
+// returns whether res is a type which may have write errors (not just command errors).
+function _mayHaveWriteErrors(res) {
+    return res instanceof WriteResult || res instanceof WriteError || res instanceof BulkWriteResult || res instanceof BulkWriteError;
+}
+
 assert.commandWorked = function(res, msg) {
     if (assert._debug && msg) {
         print("in assert for: " + msg);
@@ -419,7 +424,7 @@ assert.commandWorked = function(res, msg) {
 
     const failMsg = "command failed: " + tojson(res) + " : " + msg;
 
-    if (res instanceof WriteResult || res instanceof BulkWriteResult) {
+    if (_mayHaveWriteErrors(res)) {
         assert.writeOK(res, msg);
     } else if (res instanceof WriteCommandError) {
         // A WriteCommandError implies ok:0.
@@ -455,7 +460,13 @@ assert.commandWorkedIgnoringWriteErrors = function(res, msg) {
 
     const failMsg = "command failed: " + tojson(res) + " : " + msg;
 
-    if (res instanceof WriteCommandError || res instanceof Error) {
+    // TODO: problem: WriteError and BulkWriteError are instanceof Error, and *these* are writeerrors only
+    if (res instanceof WriteCommandError) {
+        doassert(failMsg, res);
+    } else if (res instanceof WriteError || res instanceof BulkWriteError) {
+        // These are write errors, not command errors. no-op.
+    } else if (res instanceof Error) {
+        // Some command errors may be thrown as an Error with code property.
         doassert(failMsg, res);
     } else if (res.hasOwnProperty("ok")) {
         if (res.ok === 0) {
@@ -480,7 +491,7 @@ assert.commandFailed = function(res, msg) {
 
     const failMsg = "command worked when it should have failed: " + tojson(res) + " : " + msg;
 
-    if (res instanceof WriteResult || res instanceof BulkWriteResult) {
+    if (_mayHaveWriteErrors(res)) {
         assert.writeError(res, msg);
     } else if (res.hasOwnProperty("ok")) {
         if (_rawCommandReplyWorked(res)) {
@@ -512,7 +523,7 @@ assert.commandFailedWithCode = function(res, expectedCode, msg) {
 
     const failCodeMsg = "command did not fail with any of the following codes " + expectedCode.join(",") + tojson(res) + " : " + msg;
 
-    if (res instanceof WriteResult || res instanceof BulkWriteResult) {
+    if (_mayHaveWriteErrors(res)) {
         assert.writeErrorWithCode(res, expectedCode, msg);
     } else if (res.hasOwnProperty("ok")) {
         if (_rawCommandReplyWorked(res)) {
@@ -661,11 +672,8 @@ assert.writeOK = function(res, msg) {
         } else if (res.hasWriteConcernError()) {
             errMsg = "write concern failed with errors: " + tojson(res);
         }
-    } else if (res instanceof WriteCommandError) {
-        // Can only happen with bulk inserts
+    } else if (res instanceof WriteCommandError || res instanceof WriteError || res instanceof BulkWriteError) {
         errMsg = "write command failed: " + tojson(res);
-    } else if (res instanceof WriteError) {
-        errMsg = "write failed with error: " + tojson(res);
     } else {
         if (!res || !res.ok) {
             errMsg = "unknown type of write result, cannot check ok: " + tojson(res);
@@ -700,7 +708,7 @@ assert.writeErrorWithCode = function(res, expectedCode, msg) {
         } else {
             errMsg = "no write error: " + tojson(res);
         }
-    } else if (res instanceof BulkWriteResult) {
+    } else if (res instanceof BulkWriteResult || res instanceof BulkWriteError) {
         // Can only happen with bulk inserts
         if (res.hasWriteErrors()) {
             // Save every write error code.
@@ -713,6 +721,8 @@ assert.writeErrorWithCode = function(res, expectedCode, msg) {
     } else if (res instanceof WriteCommandError) {
         // Can only happen with bulk inserts
         // No-op since we're expecting an error
+    } else if (res instanceof WriteError) {
+        writeErrorCodes.push(res.code);
     } else {
         if (!res || res.ok) {
             errMsg = "unknown type of write result, cannot check error: " + tojson(res);
