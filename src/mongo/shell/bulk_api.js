@@ -419,14 +419,6 @@ var _bulk_api_module = (function() {
         this.shellPrint = function() {
             return this.toString();
         };
-
-        this.toSingleResult = function() {
-            // This is *only* safe to do with a WriteCommandError from the bulk api when the bulk is
-            // known to be of size == 1
-            var bulkResult = getEmptyBulkResult();
-            bulkResult.writeErrors.push({code: this.code, index: 0, errmsg: this.errmsg});
-            return new BulkWriteResult(bulkResult, NONE).toSingleResult();
-        };
     };
 
     WriteCommandError.prototype = Object.create(Error.prototype);

@@ -221,6 +221,7 @@ function mapReduceOk() {
             return v[0];
         },
         {out: "coll_out"});
+    assert(res instanceof MapReduceResult);
     assert.doesNotThrow(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.throws(() => assert.commandFailed(res));
@@ -238,6 +239,44 @@ function mapReduceErr() {
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, 139));
 }
 
+function errObject() {
+    // Some functions throw an Error with a code property attached.
+    let threw = false;
+    let res = null;
+    try {
+        db.eval("IHopeNobodyEverMakesThisABuiltInReference");
+    } catch(e) {
+        threw = true;
+        res = e;
+    }
+    assert(threw);
+    assert(res instanceof Error);
+    assert(res.hasOwnProperty("code"));
+    assert.throws(() => assert.commandWorked(res));
+    assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
+    assert.doesNotThrow(() => assert.commandFailed(res));
+    assert.doesNotThrow(() => assert.commandFailedWithCode(res, 139));
+}
+
+// Test when the insert command fails with ok:0 (i.e. not failing due to write err)
+function collInsertNotOK() {
+    let res = db.coll.insert({x:1}, {writeConcern: {"bad": 1}});
+    assert(res instanceof WriteCommandError);
+    assert.throws(() => assert.commandWorked(res));
+    assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
+    assert.doesNotThrow(() => assert.commandFailed(res));
+    assert.doesNotThrow(() => assert.commandFailedWithCode(res, 9));
+}
+
+function collMultiInsertNotOK() {
+    let res = db.coll.insert([{x:1},{x:2}], {writeConcern: {"bad": 1}});
+    assert(res instanceof WriteCommandError);
+    assert.throws(() => assert.commandWorked(res));
+    assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
+    assert.doesNotThrow(() => assert.commandFailed(res));
+    assert.doesNotThrow(() => assert.commandFailedWithCode(res, 9));
+}
+
 rawCommandOk();
 rawCommandErr();
 rawCommandWriteOk();
@@ -248,5 +287,7 @@ collMultiWriteOk();
 collMultiWriteErr();
 mapReduceOk();
 mapReduceErr();
-
+errObject();
+collInsertNotOK();
+collMultiInsertNotOK();
 jsTest.log("end");

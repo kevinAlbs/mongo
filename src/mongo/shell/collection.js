@@ -317,7 +317,7 @@ DBCollection.prototype.insert = function(obj, options) {
             if (ex instanceof BulkWriteError) {
                 result = isMultiInsert ? ex.toResult() : ex.toSingleResult();
             } else if (ex instanceof WriteCommandError) {
-                result = isMultiInsert ? ex : ex.toSingleResult();
+                result = ex;
             } else {
                 // Other exceptions rethrown as-is.
                 throw ex;
@@ -1126,6 +1126,7 @@ DBCollection.prototype.mapReduce = function(map, reduce, optionsOrOutString) {
 
     if (!raw.ok) {
         __mrerror__ = raw;
+        jsTest.log("about to throw map reduce error");
         throw _getErrorWithCode(raw, "map reduce failed:" + tojson(raw));
     }
     return new MapReduceResult(this._db, raw);
