@@ -106,7 +106,7 @@ tests.push(function collMultiInsertCmdErr() {
 tests.push(function mapReduceOk() {
     let res = db.coll.mapReduce(
         function() {
-            emit(this._id, 0)
+            emit(this._id, 0);
         },
         function(k, v) {
             return v[0];

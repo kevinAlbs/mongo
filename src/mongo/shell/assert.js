@@ -420,7 +420,7 @@ assert.commandWorked = function(res, msg) {
     }
 
     if (typeof(res) !== "object") {
-        doassert("unknown response given to commandWorked")
+        doassert("unknown response given to commandWorked");
     }
 
     const failMsg = "command failed: " + tojson(res) + " : " + msg;
@@ -456,7 +456,7 @@ assert.commandWorkedIgnoringWriteErrors = function(res, msg) {
     }
 
     if (typeof(res) !== "object") {
-        doassert("unknown response given to commandWorkedIgnoringWriteErrors")
+        doassert("unknown response given to commandWorkedIgnoringWriteErrors");
     }
 
     const failMsg = "command failed: " + tojson(res) + " : " + msg;
@@ -488,7 +488,7 @@ assert.commandFailed = function(res, msg) {
     }
 
     if (typeof(res) !== "object") {
-        doassert("unknown response given to commandFailed")
+        doassert("unknown response given to commandFailed");
     }
 
     const failMsg = "command worked when it should have failed: " + tojson(res) + " : " + msg;
@@ -516,7 +516,7 @@ assert.commandFailedWithCode = function(res, expectedCode, msg) {
     }
 
     if (typeof(res) !== "object") {
-        doassert("unknown response given to commandFailedWithCode")
+        doassert("unknown response given to commandFailedWithCode");
     }
 
     if (!Array.isArray(expectedCode)) {
@@ -540,13 +540,13 @@ assert.commandFailedWithCode = function(res, expectedCode, msg) {
             foundCode = res.writeErrors.some((err) => expectedCode.includes(err.code));
         }
         if (!foundCode) {
-            doassert(failCodeMsg, res)
+            doassert(failCodeMsg, res);
         }
     } else if (res instanceof WriteCommandError || res instanceof Error) {
         if (res.hasOwnProperty("code") && expectedCode.includes(res.code)) {
             return res;
         }
-        doassert(failCodeMsg, res)
+        doassert(failCodeMsg, res);
     } else if (res.hasOwnProperty("acknowledged")) {
         doassert(failMsg);
     } else {
