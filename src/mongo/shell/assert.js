@@ -410,7 +410,8 @@ function _rawCommandReplyWorked(raw) {
 
 // returns whether res is a type which may have write errors (not just command errors).
 function _mayHaveWriteErrors(res) {
-    return res instanceof WriteResult || res instanceof WriteError || res instanceof BulkWriteResult || res instanceof BulkWriteError;
+    return res instanceof WriteResult || res instanceof WriteError ||
+        res instanceof BulkWriteResult || res instanceof BulkWriteError;
 }
 
 assert.commandWorked = function(res, msg) {
@@ -460,7 +461,8 @@ assert.commandWorkedIgnoringWriteErrors = function(res, msg) {
 
     const failMsg = "command failed: " + tojson(res) + " : " + msg;
 
-    // TODO: problem: WriteError and BulkWriteError are instanceof Error, and *these* are writeerrors only
+    // TODO: problem: WriteError and BulkWriteError are instanceof Error, and *these* are
+    // writeerrors only
     if (res instanceof WriteCommandError) {
         doassert(failMsg, res);
     } else if (res instanceof WriteError || res instanceof BulkWriteError) {
@@ -521,7 +523,8 @@ assert.commandFailedWithCode = function(res, expectedCode, msg) {
         expectedCode = [expectedCode];
     }
 
-    const failCodeMsg = "command did not fail with any of the following codes " + expectedCode.join(",") + tojson(res) + " : " + msg;
+    const failCodeMsg = "command did not fail with any of the following codes " +
+        expectedCode.join(",") + tojson(res) + " : " + msg;
 
     if (_mayHaveWriteErrors(res)) {
         assert.writeErrorWithCode(res, expectedCode, msg);
@@ -672,7 +675,8 @@ assert.writeOK = function(res, msg) {
         } else if (res.hasWriteConcernError()) {
             errMsg = "write concern failed with errors: " + tojson(res);
         }
-    } else if (res instanceof WriteCommandError || res instanceof WriteError || res instanceof BulkWriteError) {
+    } else if (res instanceof WriteCommandError || res instanceof WriteError ||
+               res instanceof BulkWriteError) {
         errMsg = "write command failed: " + tojson(res);
     } else {
         if (!res || !res.ok) {
@@ -735,7 +739,8 @@ assert.writeErrorWithCode = function(res, expectedCode, msg) {
         }
         let found = writeErrorCodes.some((wec) => expectedCode.includes(wec));
         if (!found) {
-            errMsg = "found code(s) " + tojson(writeErrorCodes) + " does not match any of the expected codes " + tojson(expectedCode);
+            errMsg = "found code(s) " + tojson(writeErrorCodes) +
+                " does not match any of the expected codes " + tojson(expectedCode);
         }
     }
 

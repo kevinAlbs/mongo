@@ -84,7 +84,7 @@ tests.push(function collMultiInsertWriteErr() {
 
 // Test when the insert command fails with ok:0 (i.e. not failing due to write err)
 tests.push(function collInsertCmdErr() {
-    let res = db.coll.insert({x:1}, {writeConcern: {"bad": 1}});
+    let res = db.coll.insert({x: 1}, {writeConcern: {"bad": 1}});
     assert(res instanceof WriteCommandError);
     assert.throws(() => assert.commandWorked(res));
     assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
@@ -94,7 +94,7 @@ tests.push(function collInsertCmdErr() {
 });
 
 tests.push(function collMultiInsertCmdErr() {
-    let res = db.coll.insert([{x:1},{x:2}], {writeConcern: {"bad": 1}});
+    let res = db.coll.insert([{x: 1}, {x: 2}], {writeConcern: {"bad": 1}});
     assert(res instanceof WriteCommandError);
     assert.throws(() => assert.commandWorked(res));
     assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
@@ -137,7 +137,7 @@ tests.push(function errObject() {
     let res = null;
     try {
         db.eval("IHopeNobodyEverMakesThisABuiltInReference");
-    } catch(e) {
+    } catch (e) {
         threw = true;
         res = e;
     }
@@ -165,7 +165,7 @@ tests.push(function crudInsertOneErr() {
     let res = null;
     try {
         db.coll.insertOne({_id: 1});
-    } catch(e) {
+    } catch (e) {
         threw = true;
         res = e;
     }
@@ -193,7 +193,7 @@ tests.push(function crudInsertManyErr() {
     let res = null;
     try {
         db.coll.insertMany([{_id: 1}, {_id: 2}]);
-    } catch(e) {
+    } catch (e) {
         threw = true;
         res = e;
     }
@@ -210,10 +210,10 @@ tests.push(function crudInsertManyErr() {
 tests.push(function rawMultiWriteErr() {
     // TODO: not sure how to generate a command response containing more than one writeError
     let res = {
-        "ok" : 1,
-        "writeErrors" : [
-            { "index" : 0, "code" : 1, "errmsg" : "Test Error" },
-            { "index" : 1, "code" : 2, "errmsg" : "Test Error" }
+        "ok": 1,
+        "writeErrors": [
+            {"index": 0, "code": 1, "errmsg": "Test Error"},
+            {"index": 1, "code": 2, "errmsg": "Test Error"}
         ]
     };
 
@@ -227,10 +227,10 @@ tests.push(function rawMultiWriteErr() {
 tests.push(function bulkMultiWriteErr() {
     // TODO: not sure how to generate a command response containing more than one writeError
     let res = new BulkWriteResult({
-        "ok" : 1,
-        "writeErrors" : [
-            { "index" : 0, "code" : 1, "errmsg" : "Test Error" },
-            { "index" : 1, "code" : 2, "errmsg" : "Test Error" }
+        "ok": 1,
+        "writeErrors": [
+            {"index": 0, "code": 1, "errmsg": "Test Error"},
+            {"index": 1, "code": 2, "errmsg": "Test Error"}
         ]
     });
 
