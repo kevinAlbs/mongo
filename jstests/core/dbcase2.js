@@ -9,6 +9,6 @@ assert.eq(1, resultLower.nInserted);
 
 var resultUpper = dbUpperCase.c.insert({});
 assert.eq(0, resultUpper.nInserted);
-assert.writeError(resultUpper);
+assert.commandFailed(resultUpper);
 
 assert.eq(-1, db.getMongo().getDBNames().indexOf("dbcase2test_dbnameA"));
