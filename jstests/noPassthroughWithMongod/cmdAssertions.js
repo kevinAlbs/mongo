@@ -9,7 +9,7 @@ function setup() {
 
 // Raw command responses.
 tests.push(function rawCommandOk() {
-    let res = db.runCommand({"ping": 1});
+    const res = db.runCommand({"ping": 1});
     assert.doesNotThrow(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.throws(() => assert.commandFailed(res));
@@ -17,17 +17,18 @@ tests.push(function rawCommandOk() {
 });
 
 tests.push(function rawCommandErr() {
-    let res = db.runCommand({"IHopeNobodyEverMakesThisACommand": 1});
+    const res = db.runCommand({"IHopeNobodyEverMakesThisACommand": 1});
     assert.throws(() => assert.commandWorked(res));
     assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.CommandNotFound));
     // commandFailedWithCode should succeed if any of the passed error codes are matched.
-    assert.doesNotThrow(() => assert.commandFailedWithCode(res, [ErrorCodes.CommandNotFound, fakeErrCode]));
+    assert.doesNotThrow(
+        () => assert.commandFailedWithCode(res, [ErrorCodes.CommandNotFound, fakeErrCode]));
 });
 
 tests.push(function rawCommandWriteOk() {
-    let res = db.runCommand({insert: "coll", documents: [{_id: 2}]});
+    const res = db.runCommand({insert: "coll", documents: [{_id: 2}]});
     assert.doesNotThrow(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.throws(() => assert.commandFailed(res));
@@ -35,16 +36,17 @@ tests.push(function rawCommandWriteOk() {
 });
 
 tests.push(function rawCommandWriteErr() {
-    let res = db.runCommand({insert: "coll", documents: [{_id: 1}]});
+    const res = db.runCommand({insert: "coll", documents: [{_id: 1}]});
     assert.throws(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
-    assert.doesNotThrow(() => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
+    assert.doesNotThrow(
+        () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
 });
 
 tests.push(function collInsertWriteOk() {
-    let res = db.coll.insert({_id: 2});
+    const res = db.coll.insert({_id: 2});
     assert(res instanceof WriteResult);
     assert.doesNotThrow(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
@@ -53,17 +55,18 @@ tests.push(function collInsertWriteOk() {
 });
 
 tests.push(function collInsertWriteErr() {
-    let res = db.coll.insert({_id: 1});
+    const res = db.coll.insert({_id: 1});
     assert(res instanceof WriteResult);
     assert.throws(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
-    assert.doesNotThrow(() => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
+    assert.doesNotThrow(
+        () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
 });
 
 tests.push(function collMultiInsertWriteOk() {
-    let res = db.coll.insert([{_id: 3}, {_id: 2}]);
+    const res = db.coll.insert([{_id: 3}, {_id: 2}]);
     assert(res instanceof BulkWriteResult);
     assert.doesNotThrow(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
@@ -72,38 +75,41 @@ tests.push(function collMultiInsertWriteOk() {
 });
 
 tests.push(function collMultiInsertWriteErr() {
-    let res = db.coll.insert([{_id: 1}, {_id: 2}]);
+    const res = db.coll.insert([{_id: 1}, {_id: 2}]);
     assert(res instanceof BulkWriteResult);
     assert.throws(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
-    assert.doesNotThrow(() => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
+    assert.doesNotThrow(
+        () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
 });
 
 // Test when the insert command fails with ok:0 (i.e. not failing due to write err)
 tests.push(function collInsertCmdErr() {
-    let res = db.coll.insert({x: 1}, {writeConcern: {"bad": 1}});
+    const res = db.coll.insert({x: 1}, {writeConcern: {"bad": 1}});
     assert(res instanceof WriteCommandError);
     assert.throws(() => assert.commandWorked(res));
     assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.FailedToParse));
-    assert.doesNotThrow(() => assert.commandFailedWithCode(res, [ErrorCodes.FailedToParse, fakeErrCode]));
+    assert.doesNotThrow(
+        () => assert.commandFailedWithCode(res, [ErrorCodes.FailedToParse, fakeErrCode]));
 });
 
 tests.push(function collMultiInsertCmdErr() {
-    let res = db.coll.insert([{x: 1}, {x: 2}], {writeConcern: {"bad": 1}});
+    const res = db.coll.insert([{x: 1}, {x: 2}], {writeConcern: {"bad": 1}});
     assert(res instanceof WriteCommandError);
     assert.throws(() => assert.commandWorked(res));
     assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.FailedToParse));
-    assert.doesNotThrow(() => assert.commandFailedWithCode(res, [ErrorCodes.FailedToParse, fakeErrCode]));
+    assert.doesNotThrow(
+        () => assert.commandFailedWithCode(res, [ErrorCodes.FailedToParse, fakeErrCode]));
 });
 
 tests.push(function mapReduceOk() {
-    let res = db.coll.mapReduce(
+    const res = db.coll.mapReduce(
         function() {
             emit(this._id, 0);
         },
@@ -121,13 +127,18 @@ tests.push(function mapReduceOk() {
 tests.push(function mapReduceErr() {
     // db.coll.mapReduce throws if the command response has ok:0
     // Instead manually construct a MapReduceResult with ok:0
-    let res = new MapReduceResult(
-        db, {"ok": 0, "errmsg": "Example Error", "code": ErrorCodes.JSInterpreterFailure, "codeName": "JSInterpreterFailure"});
+    const res = new MapReduceResult(db, {
+        "ok": 0,
+        "errmsg": "Example Error",
+        "code": ErrorCodes.JSInterpreterFailure,
+        "codeName": "JSInterpreterFailure"
+    });
     assert.throws(() => assert.commandWorked(res));
     assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.JSInterpreterFailure));
-    assert.doesNotThrow(() => assert.commandFailedWithCode(res, [ErrorCodes.JSInterpreterFailure, fakeErrCode]));
+    assert.doesNotThrow(
+        () => assert.commandFailedWithCode(res, [ErrorCodes.JSInterpreterFailure, fakeErrCode]));
 });
 
 tests.push(function errObject() {
@@ -147,11 +158,12 @@ tests.push(function errObject() {
     assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.JSInterpreterFailure));
-    assert.doesNotThrow(() => assert.commandFailedWithCode(res, [ErrorCodes.JSInterpreterFailure, fakeErrCode]));
+    assert.doesNotThrow(
+        () => assert.commandFailedWithCode(res, [ErrorCodes.JSInterpreterFailure, fakeErrCode]));
 });
 
 tests.push(function crudInsertOneOk() {
-    let res = db.coll.insertOne({_id: 2});
+    const res = db.coll.insertOne({_id: 2});
     assert(res.hasOwnProperty("acknowledged"));
     assert.doesNotThrow(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
@@ -169,17 +181,17 @@ tests.push(function crudInsertOneErr() {
         res = e;
     }
     assert(threw);
-    // WriteError is private to bulk_api.js, so cannot assert instanceof WriteError
     assert(res instanceof WriteError);
     assert.throws(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
-    assert.doesNotThrow(() => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
+    assert.doesNotThrow(
+        () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
 });
 
 tests.push(function crudInsertManyOk() {
-    let res = db.coll.insertMany([{_id: 2}, {_id: 3}]);
+    const res = db.coll.insertMany([{_id: 2}, {_id: 3}]);
     assert(res.hasOwnProperty("acknowledged"));
     assert.doesNotThrow(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
@@ -197,19 +209,19 @@ tests.push(function crudInsertManyErr() {
         res = e;
     }
     assert(threw);
-    // WriteError is private to bulk_api.js, so cannot assert instanceof WriteError
     assert(res instanceof BulkWriteError);
     assert.throws(() => assert.commandWorked(res));
     assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
     assert.doesNotThrow(() => assert.commandFailed(res));
     assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
-    assert.doesNotThrow(() => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
+    assert.doesNotThrow(
+        () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
 });
 
 tests.push(function rawMultiWriteErr() {
     // TODO: not sure how to generate a command response containing more than one writeError
     // so construct manually.
-    let res = {
+    const res = {
         "ok": 1,
         "writeErrors": [
             {"index": 0, "code": 1, "errmsg": "Test Error"},
@@ -227,7 +239,7 @@ tests.push(function rawMultiWriteErr() {
 tests.push(function bulkMultiWriteErr() {
     // TODO: not sure how to generate a command response containing more than one writeError
     // so construct manually.
-    let res = new BulkWriteResult({
+    const res = new BulkWriteResult({
         "ok": 1,
         "writeErrors": [
             {"index": 0, "code": 1, "errmsg": "Test Error"},

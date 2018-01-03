@@ -407,7 +407,7 @@ function _rawCommandReplyWorked(raw) {
     return true;
 }
 
-// returns whether res is a type which may have write errors (not just command errors).
+// returns whether res is a type which may have write errors (not command errors).
 // these types imply that the write command succeeded.
 function _mayHaveWriteErrors(res) {
     return res instanceof WriteResult || res instanceof WriteError ||

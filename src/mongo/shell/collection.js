@@ -261,7 +261,8 @@ DBCollection.prototype.findOne = function(query, fields, options, readConcern, c
     return ret;
 };
 
-// Returns a WriteResult for a single insert or a BulkWriteResult for a multi-insert if write command succeeded, but may contain write errors.
+// Returns a WriteResult for a single insert or a BulkWriteResult for a multi-insert if write
+// command succeeded, but may contain write errors.
 // Returns a WriteCommandError if the write command responded with ok:0.
 DBCollection.prototype.insert = function(obj, options) {
     if (!obj)
