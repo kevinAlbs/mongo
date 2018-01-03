@@ -5,8 +5,8 @@
 
 var authzErrorCode = 13;
 var hasAuthzError = function(result) {
-    assert(result.hasWriteError());
-    assert.eq(authzErrorCode, result.getWriteError().code);
+    assert(result instanceof WriteCommandError);
+    assert.eq(authzErrorCode, result.code);
 };
 
 var st = new ShardingTest({
