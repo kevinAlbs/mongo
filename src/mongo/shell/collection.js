@@ -261,6 +261,8 @@ DBCollection.prototype.findOne = function(query, fields, options, readConcern, c
     return ret;
 };
 
+// Returns a WriteResult for a single insert or a BulkWriteResult for a multi-insert if write command succeeded, but may contain write errors.
+// Returns a WriteCommandError if the write command responded with ok:0.
 DBCollection.prototype.insert = function(obj, options) {
     if (!obj)
         throw Error("no object passed to insert!");
@@ -374,6 +376,8 @@ DBCollection.prototype._parseRemove = function(t, justOne) {
     return {"query": query, "justOne": justOne, "wc": wc, "collation": collation};
 };
 
+// Returns a WriteResult if write command succeeded, but may contain write errors.
+// Returns a WriteCommandError if the write command responded with ok:0.
 DBCollection.prototype.remove = function(t, justOne) {
     var parsed = this._parseRemove(t, justOne);
     var query = parsed.query;
@@ -477,6 +481,8 @@ DBCollection.prototype._parseUpdate = function(query, obj, upsert, multi) {
     };
 };
 
+// Returns a WriteResult if write command succeeded, but may contain write errors.
+// Returns a WriteCommandError if the write command responded with ok:0.
 DBCollection.prototype.update = function(query, obj, upsert, multi) {
     var parsed = this._parseUpdate(query, obj, upsert, multi);
     var query = parsed.query;
@@ -1130,7 +1136,6 @@ DBCollection.prototype.mapReduce = function(map, reduce, optionsOrOutString) {
 
     if (!raw.ok) {
         __mrerror__ = raw;
-        jsTest.log("about to throw map reduce error");
         throw _getErrorWithCode(raw, "map reduce failed:" + tojson(raw));
     }
     return new MapReduceResult(this._db, raw);
