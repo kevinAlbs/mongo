@@ -395,7 +395,6 @@ assert.doesNotThrow.automsg = function(func, params) {
 };
 
 function _rawCommandReplyWorked(raw) {
-    // response is plain JS object.
     if (raw.ok === 0) {
         return false;
     }
@@ -409,6 +408,7 @@ function _rawCommandReplyWorked(raw) {
 }
 
 // returns whether res is a type which may have write errors (not just command errors).
+// these types imply that the write command succeeded.
 function _mayHaveWriteErrors(res) {
     return res instanceof WriteResult || res instanceof WriteError ||
         res instanceof BulkWriteResult || res instanceof BulkWriteError;
@@ -427,20 +427,16 @@ assert.commandWorked = function(res, msg) {
 
     if (_mayHaveWriteErrors(res)) {
         assert.writeOK(res, msg);
-    } else if (res instanceof WriteCommandError) {
+    } else if (res instanceof WriteCommandError || res instanceof Error) {
         // A WriteCommandError implies ok:0.
-        doassert(failMsg);
+        // Error objects may have a `code` property added (e.g. DBCollection.prototype.mapReduce)
+        // without a `ok` property
+        doassert(failMsg, res);
     } else if (res.hasOwnProperty("ok")) {
         // Handle raw command responses or cases like MapReduceResult which extend command response.
         if (!_rawCommandReplyWorked(res)) {
             doassert(failMsg, res);
         }
-    } else if (res instanceof Error) {
-        // Error objects may have a `code` property added (e.g. DBCollection.prototype.mapReduce)
-        // without a `ok` property
-        // Note: check this after checking for WriteResult types, because WriteCommandError
-        // has Error.prototype in prototype chain.
-        doassert(failMsg, res);
     } else if (res.hasOwnProperty("acknowledged")) {
         // CRUD api functions will return plain js objects.
         // no-op.
@@ -461,13 +457,9 @@ assert.commandWorkedIgnoringWriteErrors = function(res, msg) {
 
     const failMsg = "command failed: " + tojson(res) + " : " + msg;
 
-    // TODO: problem: WriteError and BulkWriteError are instanceof Error, and *these* are
-    // writeerrors only
-    if (res instanceof WriteCommandError) {
-        doassert(failMsg, res);
-    } else if (res instanceof WriteError || res instanceof BulkWriteError) {
+    if (_mayHaveWriteErrors(res)) {
         // These are write errors, not command errors. no-op.
-    } else if (res instanceof Error) {
+    } else if (res instanceof WriteCommandError || res instanceof Error) {
         // Some command errors may be thrown as an Error with code property.
         doassert(failMsg, res);
     } else if (res.hasOwnProperty("ok")) {
@@ -495,12 +487,12 @@ assert.commandFailed = function(res, msg) {
 
     if (_mayHaveWriteErrors(res)) {
         assert.writeError(res, msg);
+    } else if (res instanceof WriteCommandError || res instanceof Error) {
+        return res;
     } else if (res.hasOwnProperty("ok")) {
         if (_rawCommandReplyWorked(res)) {
             doassert(failMsg, res);
         }
-    } else if (res instanceof WriteCommandError || res instanceof Error) {
-        return res;
     } else if (res.hasOwnProperty("acknowledged")) {
         doassert(failMsg);
     } else {
@@ -524,10 +516,15 @@ assert.commandFailedWithCode = function(res, expectedCode, msg) {
     }
 
     const failCodeMsg = "command did not fail with any of the following codes " +
-        expectedCode.join(",") + tojson(res) + " : " + msg;
+        expectedCode.join(",") + " " + tojson(res) + " : " + msg;
 
     if (_mayHaveWriteErrors(res)) {
         assert.writeErrorWithCode(res, expectedCode, msg);
+    } else if (res instanceof WriteCommandError || res instanceof Error) {
+        if (res.hasOwnProperty("code") && expectedCode.includes(res.code)) {
+            return res;
+        }
+        doassert(failCodeMsg, res);
     } else if (res.hasOwnProperty("ok")) {
         if (_rawCommandReplyWorked(res)) {
             doassert("command worked when it should have failed: " + tojson(res) + " : " + msg,
@@ -542,11 +539,6 @@ assert.commandFailedWithCode = function(res, expectedCode, msg) {
         if (!foundCode) {
             doassert(failCodeMsg, res);
         }
-    } else if (res instanceof WriteCommandError || res instanceof Error) {
-        if (res.hasOwnProperty("code") && expectedCode.includes(res.code)) {
-            return res;
-        }
-        doassert(failCodeMsg, res);
     } else if (res.hasOwnProperty("acknowledged")) {
         doassert(failMsg);
     } else {
