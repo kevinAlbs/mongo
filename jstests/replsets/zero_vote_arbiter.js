@@ -6,7 +6,7 @@
 var NewReplicaSetConfigurationIncompatible = 103;
 var InvalidReplicaSetConfig = 93;
 
-// Skip db hash check since replsets are assigned invalid configs
+// Skip db hash check since replsets are assigned invalid configs.
 TestData.skipCheckDBHashes = true;
 
 /*

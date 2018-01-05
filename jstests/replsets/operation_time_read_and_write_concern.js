@@ -5,7 +5,7 @@
 (function() {
     "use strict";
 
-    // Skip db hash check because replication is stopped on secondaries
+    // Skip db hash check because replication is stopped on secondaries.
     TestData.skipCheckDBHashes = true;
 
     load("jstests/replsets/rslib.js");           // For startSetIfSupportsReadMajority.

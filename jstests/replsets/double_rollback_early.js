@@ -7,7 +7,7 @@
 (function() {
     'use strict';
 
-    // Skip db hash check because replset is partitioned
+    // Skip db hash check because replset is partitioned.
     TestData.skipCheckDBHashes = true;
 
     load("jstests/libs/check_log.js");

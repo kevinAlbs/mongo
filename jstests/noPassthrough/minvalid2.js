@@ -18,7 +18,7 @@
  * @tags: [requires_persistence]
  */
 
-// Skip db hash check because replset cannot reach consistent state
+// Skip db hash check because replset cannot reach consistent state.
 TestData.skipCheckDBHashes = true;
 
 print("1. make 3-member set w/arb (2)");

@@ -3,7 +3,7 @@
 (function() {
     "use strict";
 
-    // Skip db hash check because secondary cannot complete initial sync
+    // Skip db hash check because secondary cannot complete initial sync.
     TestData.skipCheckDBHashes = true;
 
     load("jstests/libs/check_log.js");

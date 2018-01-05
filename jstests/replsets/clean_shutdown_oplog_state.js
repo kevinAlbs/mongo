@@ -7,7 +7,7 @@
 (function() {
     "use strict";
 
-    // Skip db hash check because secondary restarted as standalone
+    // Skip db hash check because secondary restarted as standalone.
     TestData.skipCheckDBHashes = true;
 
     var rst = new ReplSetTest({

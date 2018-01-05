@@ -5,9 +5,6 @@
 (function() {
     "use strict";
 
-    // Skip db hash check since replset is started with noReplSet.
-    TestData.skipCheckDBHashes = true;
-
     load("jstests/libs/retryable_writes_util.js");
 
     if (!RetryableWritesUtil.storageEngineSupportsRetryableWrites(jsTest.options().storageEngine)) {

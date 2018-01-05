@@ -27,7 +27,7 @@ load("jstests/libs/write_concern_util.js");
 (function() {
     "use strict";
 
-    // Skip db hash check because this partitions the replset
+    // Skip db hash check because this partitions the replset.
     TestData.skipCheckDBHashes = true;
 
     var testName = "linearizable_read_concern";

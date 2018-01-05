@@ -6,7 +6,7 @@
 var TagsTest = function(options) {
     'use strict';
 
-    // Skip db hash check since this test leaves replset partitioned
+    // Skip db hash check since this test leaves replset partitioned.
     TestData.skipCheckDBHashes = true;
 
     if (!(this instanceof TagsTest)) {

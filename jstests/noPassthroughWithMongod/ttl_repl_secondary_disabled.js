@@ -1,7 +1,7 @@
 /** Test TTL docs are not deleted from secondaries directly
  */
 
-// Skip db hash check because secondary will have extra document
+// Skip db hash check because secondary will have extra document.
 TestData.skipCheckDBHashes = true;
 
 var rt = new ReplSetTest({name: "ttl_repl", nodes: 2});
