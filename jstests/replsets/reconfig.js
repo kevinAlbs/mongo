@@ -5,7 +5,7 @@
 (function() {
     "use strict";
 
-    // Skip checking DB hash because secondary is left with a different config
+    // Skip db hash check because secondary is left with a different config.
     TestData.skipCheckDBHashes = true;
 
     var numNodes = 5;

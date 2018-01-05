@@ -7,7 +7,7 @@ load("jstests/replsets/rslib.js");
 (function() {
     "use strict";
 
-    // skip db hash check since the removed node has wrong config and is still alive.
+    // Skip db hash check since the removed node has wrong config and is still alive.
     TestData.skipCheckDBHashes = true;
 
     var NODE_COUNT = 3;

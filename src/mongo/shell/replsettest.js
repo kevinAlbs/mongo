@@ -1461,7 +1461,7 @@ var ReplSetTest = function(opts) {
 
                 try {
                     // Filter only collections that were retrieved by the dbhash. listCollections
-                    // may include non-replicated collections like system.profile
+                    // may include non-replicated collections like system.profile.
                     var primaryCollInfo = primary.getDB(dbName).getCollectionInfos().filter(
                         (info) => Array.contains(primaryCollections, info.name));
 
@@ -1952,7 +1952,7 @@ var ReplSetTest = function(opts) {
             // - the replica set is in an unrecoverable inconsistent state. E.g. the replica set
             //   is partitioned.
             //
-            if (this.nodes.length > 1) {  // skip for single node replsets
+            if (this.nodes.length > 1) {  // skip for single node replsets.
                 if (_callIsMaster()) {
                     // Auth only on live nodes because authutil.assertAuthenticate
                     // refuses to log in live connections if some secondaries are down.
