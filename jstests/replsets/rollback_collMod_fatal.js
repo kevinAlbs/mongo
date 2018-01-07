@@ -9,7 +9,7 @@
  * @tags: [requires_persistence]
  */
 
-TestData.skipCheckDBHashes = true;
+//TestData.skipCheckDBHashes = true;
 
 // Sets up a replica set and grabs things for later.
 var name = "rollback_collMod_fatal";

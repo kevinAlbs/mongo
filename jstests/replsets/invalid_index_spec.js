@@ -6,8 +6,6 @@
 (function() {
     "use strict";
 
-    TestData.skipCheckDBHashes = true;
-
     load("jstests/replsets/rslib.js");
 
     const testName = "invalid_index_spec";

@@ -8,7 +8,6 @@
  * run on ephemeral storage engines.
  * @tags: [requires_persistence]
 */
-TestData.skipCheckDBHashes = true;
 // Sets up a replica set and grabs things for later.
 var name = "rollback_cmd_unrollbackable";
 var replTest = new ReplSetTest({name: name, nodes: 3});
@@ -46,7 +45,7 @@ options = {
     upsert: true
 };
 // Inserts another oplog entry to set minValid ahead.
-assert.writeOK(b_conn.getDB(name).foo.insert({x: 123}));
+assert.writeOK(b_conn.getDB(name).foo.insert({x: 123}, options));
 var oplog_entry = b_conn.getDB("local").oplog.rs.find().sort({$natural: -1})[0];
 oplog_entry["ts"] = Timestamp(oplog_entry["ts"].t, oplog_entry["ts"].i + 1);
 oplog_entry["op"] = "c";

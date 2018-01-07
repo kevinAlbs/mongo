@@ -204,5 +204,6 @@
         replTest.checkOplogs();
     });
 
+    // DB hash check is done in stopSet.
     replTest.stopSet();
 }());
