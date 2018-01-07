@@ -8,7 +8,8 @@
 (function() {
     'use strict';
 
-    // Skip db hash check because secondary will have different number of indexes due to the --noIndexBuildRetry command line option.
+    // Skip db hash check because secondary will have different number of indexes due to the
+    // --noIndexBuildRetry command line option.
     TestData.skipCheckDBHashes = true;
 
     // Set up replica set.

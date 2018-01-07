@@ -1462,7 +1462,8 @@ var ReplSetTest = function(opts) {
                 try {
                     // Filter only collections that were retrieved by the dbhash. listCollections
                     // may include non-replicated collections like system.profile.
-                    var primaryCollInfo = primary.getDB(dbName).getCollectionInfos({name: {$in: primaryCollections}});
+                    var primaryCollInfo =
+                        primary.getDB(dbName).getCollectionInfos({name: {$in: primaryCollections}});
 
                 } catch (e) {
                     if (jsTest.options().skipValidationOnInvalidViewDefinitions) {
@@ -1513,7 +1514,8 @@ var ReplSetTest = function(opts) {
 
                     // Check that collection information is consistent on the primary and
                     // secondaries.
-                    var secondaryCollInfo = secondary.getDB(dbName).getCollectionInfos({name: {$in: secondaryCollections}});
+                    var secondaryCollInfo = secondary.getDB(dbName).getCollectionInfos(
+                        {name: {$in: secondaryCollections}});
 
                     secondaryCollInfo.forEach(secondaryInfo => {
                         primaryCollInfo.forEach(primaryInfo => {
@@ -1950,7 +1952,8 @@ var ReplSetTest = function(opts) {
             // - the replica set is in an unrecoverable inconsistent state. E.g. the replica set
             //   is partitioned.
             //
-            if (_callIsMaster() && this.liveNodes.slaves.length > 0) { // skip for single node replsets.
+            if (_callIsMaster() &&
+                this.liveNodes.slaves.length > 0) {  // skip for single node replsets.
                 // Auth only on live nodes because authutil.assertAuthenticate
                 // refuses to log in live connections if some secondaries are down.
                 asCluster([this.liveNodes.master, ...this.liveNodes.slaves],
