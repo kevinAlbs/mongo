@@ -394,158 +394,136 @@ assert.doesNotThrow.automsg = function(func, params) {
     assert.doesNotThrow(func, params, func.toString());
 };
 
-function _rawCommandReplyWorked(raw) {
-    if (raw.ok === 0) {
-        return false;
-    }
-
-    // a write command response may have ok:1 but write errors
-    if (raw.hasOwnProperty("writeErrors") && raw.writeErrors.length > 0) {
-        return false;
-    }
-
-    return true;
-}
-
-// returns whether res is a type which may have write errors (not command errors).
-// these types imply that the write command succeeded.
-function _mayHaveWriteErrors(res) {
-    return res instanceof WriteResult || res instanceof WriteError ||
-        res instanceof BulkWriteResult || res instanceof BulkWriteError;
-}
-
-assert.commandWorked = function(res, msg) {
-    if (assert._debug && msg) {
-        print("in assert for: " + msg);
-    }
-
-    if (typeof(res) !== "object") {
-        doassert("unknown response given to commandWorked");
-    }
-
-    const failMsg = "command failed: " + tojson(res) + " : " + msg;
-
-    if (_mayHaveWriteErrors(res)) {
-        assert.writeOK(res, msg);
-    } else if (res instanceof WriteCommandError || res instanceof Error) {
-        // A WriteCommandError implies ok:0.
-        // Error objects may have a `code` property added (e.g. DBCollection.prototype.mapReduce)
-        // without a `ok` property
-        doassert(failMsg, res);
-    } else if (res.hasOwnProperty("ok")) {
-        // Handle raw command responses or cases like MapReduceResult which extend command response.
-        if (!_rawCommandReplyWorked(res)) {
-            doassert(failMsg, res);
+(function(){
+    function _rawReplyOkAndNoWriteErrors(raw) {
+        if (raw.ok === 0) {
+            return false;
         }
-    } else if (res.hasOwnProperty("acknowledged")) {
-        // CRUD api functions will return plain js objects.
-        // no-op.
-    } else {
-        doassert("unknown type of result, cannot check ok: " + tojson(res) + " : " + msg, res);
-    }
-    return res;
-};
 
-assert.commandWorkedIgnoringWriteErrors = function(res, msg) {
-    if (assert._debug && msg) {
-        print("in assert for: " + msg);
-    }
-
-    if (typeof(res) !== "object") {
-        doassert("unknown response given to commandWorkedIgnoringWriteErrors");
-    }
-
-    const failMsg = "command failed: " + tojson(res) + " : " + msg;
-
-    if (_mayHaveWriteErrors(res)) {
-        // These are write errors, not command errors. no-op.
-    } else if (res instanceof WriteCommandError || res instanceof Error) {
-        // Some command errors may be thrown as an Error with code property.
-        doassert(failMsg, res);
-    } else if (res.hasOwnProperty("ok")) {
-        if (res.ok === 0) {
-            doassert(failMsg, res);
+        // A write command response may have ok:1 but write errors.
+        if (raw.hasOwnProperty("writeErrors") && raw.writeErrors.length > 0) {
+            return false;
         }
-    } else if (res.hasOwnProperty("acknowledged")) {
-        // no-op.
-    } else {
-        doassert("unknown type of result, cannot check ok: " + tojson(res) + " : " + msg, res);
-    }
-    return res;
-};
 
-assert.commandFailed = function(res, msg) {
-    if (assert._debug && msg) {
-        print("in assert for: " + msg);
+        return true;
     }
 
-    if (typeof(res) !== "object") {
-        doassert("unknown response given to commandFailed");
+    // Returns whether res is a type which may have write errors (not command errors).
+    // These types imply that the write command succeeded.
+    function _isWriteResultType(res) {
+        return res instanceof WriteResult || res instanceof WriteError ||
+            res instanceof BulkWriteResult || res instanceof BulkWriteError;
     }
 
-    const failMsg = "command worked when it should have failed: " + tojson(res) + " : " + msg;
+    function _assertCommandWorked(res, msg, ignoreWriteErrors) {
+        if (assert._debug && msg) {
+            print("in assert for: " + msg);
+        }
 
-    if (_mayHaveWriteErrors(res)) {
-        assert.writeError(res, msg);
-    } else if (res instanceof WriteCommandError || res instanceof Error) {
+        if (typeof res !== "object") {
+            doassert("unknown response given to commandWorked");
+        }
+
+        const failMsg = "command failed: " + tojson(res) + " : " + msg;
+
+        if (_isWriteResultType(res)) {
+            // These can only contain write errors, not command errors.
+            if (!ignoreWriteErrors) {
+                assert.writeOK(res, msg);
+            }
+        } else if (res instanceof WriteCommandError || res instanceof Error) {
+            // A WriteCommandError implies ok:0.
+            // Error objects may have a `code` property added (e.g. DBCollection.prototype.mapReduce)
+            // without a `ok` property.
+            doassert(failMsg, res);
+        } else if (res.hasOwnProperty("ok")) {
+            // Handle raw command responses or cases like MapReduceResult which extend command response.
+            if (ignoreWriteErrors) {
+                if (res.ok === 0) {
+                    doassert(failMsg, res);
+                }
+            } else {
+                if (!_rawReplyOkAndNoWriteErrors(res)) {
+                    doassert(failMsg, res);
+                }
+            }
+        } else if (res.hasOwnProperty("acknowledged")) {
+            // CRUD api functions will return plain js objects.
+            // no-op.
+        } else {
+            doassert("unknown type of result, cannot check ok: " + tojson(res) + " : " + msg, res);
+        }
         return res;
-    } else if (res.hasOwnProperty("ok")) {
-        if (_rawCommandReplyWorked(res)) {
-            doassert(failMsg, res);
+    }
+
+    function _assertCommandFailed(res, expectedCode, msg) {
+        if (assert._debug && msg) {
+            print("in assert for: " + msg);
         }
-    } else if (res.hasOwnProperty("acknowledged")) {
-        doassert(failMsg);
-    } else {
-        doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg, res);
-    }
-    return res;
-};
 
-// expectedCode can be an array of possible codes
-assert.commandFailedWithCode = function(res, expectedCode, msg) {
-    if (assert._debug && msg) {
-        print("in assert for: " + msg);
-    }
+        if (typeof(res) !== "object") {
+            doassert("unknown response given to commandFailed");
+        }
 
-    if (typeof(res) !== "object") {
-        doassert("unknown response given to commandFailedWithCode");
-    }
+        if (expectedCode !== null && !Array.isArray(expectedCode)) {
+            expectedCode = [expectedCode];
+        }
 
-    if (!Array.isArray(expectedCode)) {
-        expectedCode = [expectedCode];
-    }
+        const failMsg = "command worked when it should have failed: " + tojson(res) + " : " + msg;
 
-    const failCodeMsg = "command did not fail with any of the following codes " +
-        expectedCode.join(",") + " " + tojson(res) + " : " + msg;
+        const failCodeMsg = (expectedCode !== null) ? "command did not fail with any of the following codes " +
+            tojson(expectedCode) + " " + tojson(res) + " : " + msg : "";
 
-    if (_mayHaveWriteErrors(res)) {
-        assert.writeErrorWithCode(res, expectedCode, msg);
-    } else if (res instanceof WriteCommandError || res instanceof Error) {
-        if (res.hasOwnProperty("code") && expectedCode.includes(res.code)) {
+        if (_isWriteResultType(res)) {
+            assert.writeErrorWithCode(res, expectedCode, msg);
+        } else if (res instanceof WriteCommandError || res instanceof Error) {
+            if (expectedCode !== null) {
+                if (res.hasOwnProperty("code") && expectedCode.includes(res.code)) {
+                    return res;
+                }
+                doassert(failCodeMsg, res);
+            }
             return res;
+        } else if (res.hasOwnProperty("ok")) {
+            if (_rawReplyOkAndNoWriteErrors(res)) {
+                doassert(failMsg, res);
+            }
+            if (expectedCode !== null) {
+                let foundCode = false;
+                if (res.hasOwnProperty("code") && expectedCode.includes(res.code)) {
+                    foundCode = true;
+                } else if (res.hasOwnProperty("writeErrors")) {
+                    foundCode = res.writeErrors.some((err) => expectedCode.includes(err.code));
+                }
+                if (!foundCode) {
+                    doassert(failCodeMsg, res);
+                }
+            }
+        } else if (res.hasOwnProperty("acknowledged")) {
+            doassert(failMsg);
+        } else {
+            doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg, res);
         }
-        doassert(failCodeMsg, res);
-    } else if (res.hasOwnProperty("ok")) {
-        if (_rawCommandReplyWorked(res)) {
-            doassert("command worked when it should have failed: " + tojson(res) + " : " + msg,
-                     res);
-        }
-        let foundCode = false;
-        if (res.hasOwnProperty("code") && expectedCode.includes(res.code)) {
-            foundCode = true;
-        } else if (res.hasOwnProperty("writeErrors")) {
-            foundCode = res.writeErrors.some((err) => expectedCode.includes(err.code));
-        }
-        if (!foundCode) {
-            doassert(failCodeMsg, res);
-        }
-    } else if (res.hasOwnProperty("acknowledged")) {
-        doassert(failMsg);
-    } else {
-        doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg, res);
+        return res;
     }
-    return res;
-};
+
+    assert.commandWorked = function(res, msg) {
+        return _assertCommandWorked(res, msg, false);
+    };
+
+    assert.commandWorkedIgnoringWriteErrors = function(res, msg) {
+        return _assertCommandWorked(res, msg, true);
+    };
+
+    assert.commandFailed = function(res, msg) {
+        return _assertCommandFailed(res, null, msg);
+    };
+
+    // expectedCode can be an array of possible codes.
+    assert.commandFailedWithCode = function(res, expectedCode, msg) {
+        return _assertCommandFailed(res, expectedCode, msg);
+    };
+})();
 
 assert.isnull = function(what, msg) {
     if (assert._debug && msg)
