@@ -158,6 +158,12 @@ function mixedShardTest(options1, options2, shouldSucceed) {
         // silence error if we should fail...
         print("IMPORTANT! => Test failed when it should have failed...continuing...");
     } finally {
+        // Authenticate csrs so ReplSetTest.stopSet() can do db hash check.
+        if (st.configRS) {
+            st.configRS.nodes.forEach((node) => {
+                node.getDB('admin').auth('admin', 'pwd');
+            });
+        }
         // This has to be done in order for failure
         // to not prevent future tests from running...
         if (st) {
