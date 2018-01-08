@@ -394,7 +394,7 @@ assert.doesNotThrow.automsg = function(func, params) {
     assert.doesNotThrow(func, params, func.toString());
 };
 
-(function(){
+(function() {
     function _rawReplyOkAndNoWriteErrors(raw) {
         if (raw.ok === 0) {
             return false;
@@ -433,11 +433,13 @@ assert.doesNotThrow.automsg = function(func, params) {
             }
         } else if (res instanceof WriteCommandError || res instanceof Error) {
             // A WriteCommandError implies ok:0.
-            // Error objects may have a `code` property added (e.g. DBCollection.prototype.mapReduce)
+            // Error objects may have a `code` property added (e.g.
+            // DBCollection.prototype.mapReduce)
             // without a `ok` property.
             doassert(failMsg, res);
         } else if (res.hasOwnProperty("ok")) {
-            // Handle raw command responses or cases like MapReduceResult which extend command response.
+            // Handle raw command responses or cases like MapReduceResult which extend command
+            // response.
             if (ignoreWriteErrors) {
                 if (res.ok === 0) {
                     doassert(failMsg, res);
@@ -471,8 +473,10 @@ assert.doesNotThrow.automsg = function(func, params) {
 
         const failMsg = "command worked when it should have failed: " + tojson(res) + " : " + msg;
 
-        const failCodeMsg = (expectedCode !== null) ? "command did not fail with any of the following codes " +
-            tojson(expectedCode) + " " + tojson(res) + " : " + msg : "";
+        const failCodeMsg = (expectedCode !== null)
+            ? "command did not fail with any of the following codes " + tojson(expectedCode) + " " +
+                tojson(res) + " : " + msg
+            : "";
 
         if (_isWriteResultType(res)) {
             assert.writeErrorWithCode(res, expectedCode, msg);
@@ -502,7 +506,8 @@ assert.doesNotThrow.automsg = function(func, params) {
         } else if (res.hasOwnProperty("acknowledged")) {
             doassert(failMsg);
         } else {
-            doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg, res);
+            doassert("unknown type of result, cannot check error: " + tojson(res) + " : " + msg,
+                     res);
         }
         return res;
     }
@@ -672,13 +677,13 @@ assert.writeError = function(res, msg) {
 assert.writeErrorWithCode = function(res, expectedCode, msg) {
 
     var errMsg = null;
-    var writeErrorCodes = [];
+    var writeErrorCodes = new Set();
 
     if (res instanceof WriteResult) {
         if (res.hasWriteError()) {
-            writeErrorCodes.push(res.getWriteError().code);
+            writeErrorCodes.add(res.getWriteError().code);
         } else if (res.hasWriteConcernError()) {
-            writeErrorCodes.push(res.getWriteConcernError().code);
+            writeErrorCodes.add(res.getWriteConcernError().code);
         } else {
             errMsg = "no write error: " + tojson(res);
         }
@@ -686,9 +691,9 @@ assert.writeErrorWithCode = function(res, expectedCode, msg) {
         // Can only happen with bulk inserts
         if (res.hasWriteErrors()) {
             // Save every write error code.
-            writeErrorCodes = res.getWriteErrors().map((we) => we.code);
+            writeErrorCodes = new Set(res.getWriteErrors().map((we) => we.code));
         } else if (res.hasWriteConcernError()) {
-            writeErrorCodes.push(res.getWriteConcernError().code);
+            writeErrorCodes.add(res.getWriteConcernError().code);
         } else {
             errMsg = "no write errors: " + tojson(res);
         }
@@ -696,7 +701,7 @@ assert.writeErrorWithCode = function(res, expectedCode, msg) {
         // Can only happen with bulk inserts
         // No-op since we're expecting an error
     } else if (res instanceof WriteError) {
-        writeErrorCodes.push(res.code);
+        writeErrorCodes.add(res.code);
     } else {
         if (!res || res.ok) {
             errMsg = "unknown type of write result, cannot check error: " + tojson(res);
@@ -707,7 +712,7 @@ assert.writeErrorWithCode = function(res, expectedCode, msg) {
         if (!Array.isArray(expectedCode)) {
             expectedCode = [expectedCode];
         }
-        let found = writeErrorCodes.some((wec) => expectedCode.includes(wec));
+        let found = expectedCode.some((ec) => writeErrorCodes.has(ec));
         if (!found) {
             errMsg = "found code(s) " + tojson(writeErrorCodes) +
                 " does not match any of the expected codes " + tojson(expectedCode);
