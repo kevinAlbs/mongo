@@ -223,35 +223,27 @@
     });
 
     tests.push(function rawMultiWriteErr() {
-        const res = {
-            "ok": 1,
-            "writeErrors": [
-                {"index": 0, "code": 1, "errmsg": "Test Error"},
-                {"index": 1, "code": 2, "errmsg": "Test Error"}
-            ]
-        };
-
+        // Do an unordered bulk insert with duplicate keys to produce multiple write errors.
+        const res =
+            db.runCommand({"insert": "coll", documents: [{_id: 1}, {_id: 1}], ordered: false});
+        assert(res.writeErrors.length == 2, "did not get multiple write errors");
         assert.throws(() => assert.commandWorked(res));
         assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
         assert.doesNotThrow(() => assert.commandFailed(res));
-        assert.doesNotThrow(() => assert.commandFailedWithCode(res, 1));
-        assert.doesNotThrow(() => assert.commandFailedWithCode(res, [1, kFakeErrCode]));
+        assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
+        assert.doesNotThrow(
+            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, kFakeErrCode]));
     });
 
     tests.push(function bulkMultiWriteErr() {
-        const res = new BulkWriteResult({
-            "ok": 1,
-            "writeErrors": [
-                {"index": 0, "code": 1, "errmsg": "Test Error"},
-                {"index": 1, "code": 2, "errmsg": "Test Error"}
-            ]
-        });
-
+        // Do an unordered bulk insert with duplicate keys to produce multiple write errors.
+        const res = db.coll.insert([{_id: 1}, {_id: 1}], {ordered: false});
         assert.throws(() => assert.commandWorked(res));
         assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
         assert.doesNotThrow(() => assert.commandFailed(res));
-        assert.doesNotThrow(() => assert.commandFailedWithCode(res, 1));
-        assert.doesNotThrow(() => assert.commandFailedWithCode(res, [1, kFakeErrCode]));
+        assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
+        assert.doesNotThrow(
+            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, kFakeErrCode]));
     });
 
     tests.forEach((test) => {

@@ -468,7 +468,6 @@ assert.doesNotThrow.automsg = function(func, params) {
         }
 
         if (expectedCode !== kAnyErrorCode && !Array.isArray(expectedCode)) {
-            jsTest.log(tojsononeline(expectedCode));
             expectedCode = [expectedCode];
         }
 
