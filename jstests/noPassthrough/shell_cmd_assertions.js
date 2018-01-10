@@ -1,8 +1,8 @@
-(function(){
+(function() {
     "use strict";
     const conn = MongoRunner.runMongod();
     const db = conn.getDB("commandAssertions");
-    const fakeErrCode = 1234567890;
+    const kFakeErrCode = 1234567890;
     const tests = [];
 
     function setup() {
@@ -27,7 +27,7 @@
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.CommandNotFound));
         // commandFailedWithCode should succeed if any of the passed error codes are matched.
         assert.doesNotThrow(
-            () => assert.commandFailedWithCode(res, [ErrorCodes.CommandNotFound, fakeErrCode]));
+            () => assert.commandFailedWithCode(res, [ErrorCodes.CommandNotFound, kFakeErrCode]));
     });
 
     tests.push(function rawCommandWriteOk() {
@@ -45,7 +45,7 @@
         assert.doesNotThrow(() => assert.commandFailed(res));
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
         assert.doesNotThrow(
-            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
+            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, kFakeErrCode]));
     });
 
     tests.push(function collInsertWriteOk() {
@@ -65,7 +65,7 @@
         assert.doesNotThrow(() => assert.commandFailed(res));
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
         assert.doesNotThrow(
-            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
+            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, kFakeErrCode]));
     });
 
     tests.push(function collMultiInsertWriteOk() {
@@ -85,7 +85,7 @@
         assert.doesNotThrow(() => assert.commandFailed(res));
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
         assert.doesNotThrow(
-            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
+            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, kFakeErrCode]));
     });
 
     // Test when the insert command fails with ok:0 (i.e. not failing due to write err)
@@ -97,7 +97,7 @@
         assert.doesNotThrow(() => assert.commandFailed(res));
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.FailedToParse));
         assert.doesNotThrow(
-            () => assert.commandFailedWithCode(res, [ErrorCodes.FailedToParse, fakeErrCode]));
+            () => assert.commandFailedWithCode(res, [ErrorCodes.FailedToParse, kFakeErrCode]));
     });
 
     tests.push(function collMultiInsertCmdErr() {
@@ -108,7 +108,7 @@
         assert.doesNotThrow(() => assert.commandFailed(res));
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.FailedToParse));
         assert.doesNotThrow(
-            () => assert.commandFailedWithCode(res, [ErrorCodes.FailedToParse, fakeErrCode]));
+            () => assert.commandFailedWithCode(res, [ErrorCodes.FailedToParse, kFakeErrCode]));
     });
 
     tests.push(function mapReduceOk() {
@@ -139,9 +139,10 @@
         assert.throws(() => assert.commandWorked(res));
         assert.throws(() => assert.commandWorkedIgnoringWriteErrors(res));
         assert.doesNotThrow(() => assert.commandFailed(res));
-        assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.JSInterpreterFailure));
-        assert.doesNotThrow(
-            () => assert.commandFailedWithCode(res, [ErrorCodes.JSInterpreterFailure, fakeErrCode]));
+        assert.doesNotThrow(() =>
+                                assert.commandFailedWithCode(res, ErrorCodes.JSInterpreterFailure));
+        assert.doesNotThrow(() => assert.commandFailedWithCode(
+                                res, [ErrorCodes.JSInterpreterFailure, kFakeErrCode]));
     });
 
     tests.push(function errObject() {
@@ -162,7 +163,7 @@
         assert.doesNotThrow(() => assert.commandFailed(res));
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.InternalError));
         assert.doesNotThrow(
-            () => assert.commandFailedWithCode(res, [ErrorCodes.InternalError, fakeErrCode]));
+            () => assert.commandFailedWithCode(res, [ErrorCodes.InternalError, kFakeErrCode]));
     });
 
     tests.push(function crudInsertOneOk() {
@@ -190,7 +191,7 @@
         assert.doesNotThrow(() => assert.commandFailed(res));
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
         assert.doesNotThrow(
-            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
+            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, kFakeErrCode]));
     });
 
     tests.push(function crudInsertManyOk() {
@@ -218,7 +219,7 @@
         assert.doesNotThrow(() => assert.commandFailed(res));
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, ErrorCodes.DuplicateKey));
         assert.doesNotThrow(
-            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, fakeErrCode]));
+            () => assert.commandFailedWithCode(res, [ErrorCodes.DuplicateKey, kFakeErrCode]));
     });
 
     tests.push(function rawMultiWriteErr() {
@@ -234,7 +235,7 @@
         assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
         assert.doesNotThrow(() => assert.commandFailed(res));
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, 1));
-        assert.doesNotThrow(() => assert.commandFailedWithCode(res, [1, fakeErrCode]));
+        assert.doesNotThrow(() => assert.commandFailedWithCode(res, [1, kFakeErrCode]));
     });
 
     tests.push(function bulkMultiWriteErr() {
@@ -250,7 +251,7 @@
         assert.doesNotThrow(() => assert.commandWorkedIgnoringWriteErrors(res));
         assert.doesNotThrow(() => assert.commandFailed(res));
         assert.doesNotThrow(() => assert.commandFailedWithCode(res, 1));
-        assert.doesNotThrow(() => assert.commandFailedWithCode(res, [1, fakeErrCode]));
+        assert.doesNotThrow(() => assert.commandFailedWithCode(res, [1, kFakeErrCode]));
     });
 
     tests.forEach((test) => {
