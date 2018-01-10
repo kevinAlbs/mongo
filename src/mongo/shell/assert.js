@@ -576,6 +576,9 @@ assert.doesNotThrow.automsg = function(func, params) {
     // If expectedCode is an array then this asserts that the found code is one of the codes in
     // the expectedCode array.
     assert.writeErrorWithCode = function(res, expectedCode, msg) {
+        if (expectedCode === undefined) {
+            doassert("assert.writeErrorWithCode called with undefined error code");
+        }
 
         var errMsg = null;
         var writeErrorCodes = new Set();
@@ -615,7 +618,7 @@ assert.doesNotThrow.automsg = function(func, params) {
             }
             const found = expectedCode.some((ec) => writeErrorCodes.has(ec));
             if (!found) {
-                errMsg = "found code(s) " + tojson(writeErrorCodes) +
+                errMsg = "found code(s) " + tojson(Array.from(writeErrorCodes)) +
                     " does not match any of the expected codes " + tojson(expectedCode);
             }
         }
