@@ -570,7 +570,7 @@ assert.doesNotThrow.automsg = function(func, params) {
     };
 
     assert.writeError = function(res, msg) {
-        return assert.writeErrorWithCode(res, null, msg);
+        return assert.writeErrorWithCode(res, kAnyErrorCode, msg);
     };
 
     // If expectedCode is an array then this asserts that the found code is one of the codes in
