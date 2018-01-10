@@ -46,7 +46,7 @@ options = {
     upsert: true
 };
 // Inserts another oplog entry to set minValid ahead.
-assert.writeOK(b_conn.getDB(name).foo.insert({x: 123}, options));
+assert.writeOK(b_conn.getDB(name).foo.insert({x: 123}));
 var oplog_entry = b_conn.getDB("local").oplog.rs.find().sort({$natural: -1})[0];
 oplog_entry["ts"] = Timestamp(oplog_entry["ts"].t, oplog_entry["ts"].i + 1);
 oplog_entry["op"] = "c";
