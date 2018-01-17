@@ -196,8 +196,6 @@ def find_frame(function_name_pattern):
                 raise
 
         block = find_func_block(block)
-        if block:
-            print("looking at block %s" % block.function.name)
         if block and re.match(function_name_pattern, block.function.name):
             return frame
         try:
@@ -205,7 +203,6 @@ def find_frame(function_name_pattern):
         except gdb.error as err:
             print("Ignoring GDB error '%s' in find_frame" % str(err))
             break
-
     return None
 
 
@@ -225,8 +222,8 @@ def find_mutex_holder(graph, thread_dict, show):
     # Use the thread LWP as a substitute for showing output or generating the graph.
     if mutex_holder not in thread_dict:
         print("Warning: Mutex at {} held by thread with LWP {}"
-              " not found in thread_dict. Using LWP to track thread.".format(mutex_value,
-                                                                             mutex_holder))
+            " not found in thread_dict. Using LWP to track thread.".format(mutex_value,
+                                                                           mutex_holder))
         mutex_holder_id = mutex_holder
     else:
         mutex_holder_id = thread_dict[mutex_holder]
@@ -281,7 +278,7 @@ def find_lock_manager_holders(graph, thread_dict, show):
 def find_pthread_mutex_holder(graph, thread_dict, show):
     frame = gdb.newest_frame()
 
-    # It looks like there isn't a block associated because there isn't debug info for
+    # It looks like there isn't a block for pthread_mutex_lock because there isn't debug info for
     # pthread_mutex_lock(). So just check the stack frame name.
     while frame:
         if re.match(r'pthread_mutex_lock', frame.name()):
@@ -319,8 +316,8 @@ def find_pthread_mutex_holder(graph, thread_dict, show):
     if graph:
         graph.add_edge(Thread(mutex_waiter_id, mutex_waiter_lwpid),
                        Lock(long(mutex_addr), "pthread_mutex"))
-        graph.add_edge(Lock(long(mutex_addr), "pthread_mutex"), Thread(mutex_holder_id, mutex_holder_lwpid))
-
+        graph.add_edge(Lock(long(mutex_addr), "pthread_mutex"),
+                       Thread(mutex_holder_id, mutex_holder_lwpid))
 
 
 def get_locks(graph, thread_dict, show=False):
@@ -330,8 +327,8 @@ def get_locks(graph, thread_dict, show=False):
                 continue
             thread.switch()
             find_pthread_mutex_holder(graph, thread_dict, show)
-            #find_mutex_holder(graph, thread_dict, show)
-            #find_lock_manager_holders(graph, thread_dict, show)
+            find_mutex_holder(graph, thread_dict, show)
+            find_lock_manager_holders(graph, thread_dict, show)
         except gdb.error as err:
             print("Ignoring GDB error '%s' in get_locks" % str(err))
 
@@ -347,7 +344,6 @@ def get_threads_info(graph=None):
             (_, lwpid, _) = thread.ptid
             thread_num = thread.num
             thread_id = get_thread_id()
-            print("lwpid=%d and thread_id=%d" % (lwpid, thread_id))
             if not thread_id:
                 print("Unable to retrieve thread_info for thread %d" % thread_num)
                 continue
