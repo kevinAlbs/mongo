@@ -290,7 +290,6 @@ def find_pthread_mutex_holder(graph, thread_dict, show):
 
     # Retrieve the mutex struct by looking at register r8 if available.
     mutex_addr = frame.read_register('r8')
-    # REMOVEME: Man this seems like such a bad idea.
     pthread_mutex_t_ptr = gdb.parse_and_eval("((pthread_mutex_t*)0x%x)" % mutex_addr)
     mutex_holder_lwpid = int(pthread_mutex_t_ptr.dereference()["__data"]["__owner"])
 
