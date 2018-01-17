@@ -281,10 +281,9 @@ def find_lock_manager_holders(graph, thread_dict, show):
 def find_pthread_mutex_holder(graph, thread_dict, show):
     frame = gdb.newest_frame()
 
-    # Note, it looks like there isn't a block associated because there isn't debug info for
-    # pthread_mutex_lock()
+    # It looks like there isn't a block associated because there isn't debug info for
+    # pthread_mutex_lock(). So just check the stack frame name.
     while frame:
-        print("frame name = %s" % frame.name())
         if re.match(r'pthread_mutex_lock', frame.name()):
             break
         frame = frame.older()
@@ -294,14 +293,9 @@ def find_pthread_mutex_holder(graph, thread_dict, show):
 
     # Retrieve the mutex struct by looking at register r8 if available.
     mutex_addr = frame.read_register('r8')
-    # Man this seems like such a bad idea.
-    print("Looking at register r8=%x" % mutex_addr)
+    # REMOVEME: Man this seems like such a bad idea.
     pthread_mutex_t_ptr = gdb.parse_and_eval("((pthread_mutex_t*)0x%x)" % mutex_addr)
     mutex_holder_lwpid = int(pthread_mutex_t_ptr.dereference()["__data"]["__owner"])
-    print("Got owner thread with lwpid=%d" % mutex_holder_lwpid)
-    # reg.cast()
-    # owner_thread = gdb.parse_and_eval("((pthread_mutex_t*)0x%x)->__data.__owner" % reg)
-    # print("Got %s" % struct)
 
     # At time thread_dict was initialized, the mutex holder may not have been found.
     # Use the thread LWP as a substitute for showing output or generating the graph.
@@ -419,57 +413,5 @@ class MongoDBWaitsForGraph(gdb.Command):
 
 
 MongoDBWaitsForGraph()
-
-class TestComand(gdb.Command):
-    def __init__(self):
-        register_mongo_command(self, "mongodb-pthread-lock-test", gdb.COMMAND_DATA)
-
-    def invoke(self, arg, _from_tty):
-        print("Invoked");
-        for thread in gdb.selected_inferior().threads():
-            print("looking at thread global_num=%s ptid=%s" % (thread.global_num, thread.ptid))
-            try:
-                if not thread.is_valid():
-                    continue
-                thread.switch()
-
-                # Get the first pthread frame
-                frame = gdb.newest_frame()
-
-                # Note, it looks like there isn't a block associated because there isn't debug info for pthread_mutex_lock()
-                while frame:
-                    try:
-                        # TODO: make sure it doesn't match std::mutex
-                        print("frame name = %s" % frame.name())
-                        if re.match(r'pthread_mutex_lock', frame.name()):
-                            # Retrieve the mutex struct by looking at register r8 if available.
-                            reg = frame.read_register('r8')
-                            # Man this seems like such a bad idea.
-                            print("Looking at register r8=%x" % reg)
-                            pthread_mutex_t_ptr = gdb.parse_and_eval("((pthread_mutex_t*)0x%x)" % reg)
-                            owner_thread = int(pthread_mutex_t_ptr.dereference()["__data"]["__owner"])
-                            print("Got owner thread %d" % owner_thread)
-                            # reg.cast()
-                            # owner_thread = gdb.parse_and_eval("((pthread_mutex_t*)0x%x)->__data.__owner" % reg)
-                            #print("Got %s" % struct)
-
-
-                        frame = frame.older()
-                    except gdb.error as err:
-                        print("Ignoring GDB error '%s'" % str(err))
-                        break
-
-                return None
-
-                frame = find_frame(r'pthread_mutex_lock \(\)')
-                if frame:
-                    print("found frame in thread global_num=%s ptid=%s" % (thread.global_num, thread.ptid))
-
-
-            except gdb.error as err:
-                print("Ignoring GDB error '%s' in get_locks" % str(err))
-
-
-TestComand()
 
 print("MongoDB Lock analysis commands loaded")
