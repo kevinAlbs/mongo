@@ -9,3 +9,13 @@ source buildscripts/gdb/mongo_printers.py
 
 # Load the mongodb lock analysis
 source buildscripts/gdb/mongo_lock.py
+
+print "Hiyya"
+
+# mongodb-pthread-lock-test
+
+mongodb-show-locks
+
+set confirm off
+#quit
+

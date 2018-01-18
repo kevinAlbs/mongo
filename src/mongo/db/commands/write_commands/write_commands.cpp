@@ -52,6 +52,8 @@
 #include "mongo/db/write_concern.h"
 #include "mongo/s/stale_exception.h"
 
+#include <pthread.h>
+
 namespace mongo {
 namespace {
 
@@ -261,6 +263,45 @@ public:
                        &result);
     }
 } cmdInsert;
+
+pthread_mutex_t mutex;
+void* thread_func(void* arg) {
+    printf("locking 1\n");
+    pthread_mutex_lock(&mutex);
+    printf("locking 2\n");
+    pthread_mutex_lock(&mutex);
+    pthread_exit(NULL);
+}
+
+class CmdDeadlock final : public WriteCommand {
+public:
+    CmdDeadlock() : WriteCommand("deadlock") {}
+
+    void redactForLogging(mutablebson::Document* cmdObj) final {
+        redactTooLongLog(cmdObj, "documents");
+    }
+
+    void help(std::stringstream& help) const final {
+        help << "insert documents";
+    }
+
+    Status checkAuthForRequest(OperationContext* opCtx, const OpMsgRequest& request) final {
+        return checkAuthForWriteCommand(
+            opCtx->getClient(), BatchedCommandRequest::BatchType_Insert, request);
+    }
+
+    void runImpl(OperationContext* opCtx,
+                 const OpMsgRequest& request,
+                 BSONObjBuilder& result) final {
+        const auto batch = InsertOp::parse(request);
+        const auto reply = performInserts(opCtx, batch);
+        pthread_t thread = (pthread_t)0;
+        pthread_create(&thread, NULL /* attr */, thread_func, NULL);
+        pthread_mutex_init(&mutex, NULL);
+        void* ret = NULL;
+        pthread_join(thread, &ret);
+    }
+} cmdDeadlock;
 
 class CmdUpdate final : public WriteCommand {
 public:
