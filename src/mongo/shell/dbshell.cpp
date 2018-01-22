@@ -929,10 +929,31 @@ int _main(int argc, char* argv[], char** envp) {
             cout << "failed to load: " << shellGlobalParams.files[i] << endl;
             return -3;
         }
-        if (mongo::shell_utils::KillMongoProgramInstances() != EXIT_SUCCESS) {
-            cout << "one more more child processes exited with an error during "
-                 << shellGlobalParams.files[i] << endl;
-            return -3;
+
+        // Check if the process left any running child processes.
+        std::vector<ProcessId> pids;
+        if (mongo::shell_utils::GetMongoChildProcessIds(&pids)) {
+            // TODO: I considered using log() here instead to get the nice prefix.
+            // If so, I should probably change that everywhere here. Not sure.
+            cout << "terminating the following orphan process pids: ";
+            std::copy(pids.begin(), pids.end(), std::ostream_iterator<ProcessId>(cout, " "));
+            cout << endl;
+
+            if (mongo::shell_utils::KillMongoProgramInstances() != EXIT_SUCCESS) {
+                cout << "one more more child processes exited with an error during "
+                     << shellGlobalParams.files[i] << endl;
+                return -3;
+            }
+
+            bool failIfOrphans = false;
+            const char* code = "function() { return TestData.hasOwnProperty('failIfOrphans') && TestData.failIfOrphans === true; }";
+            shellMainScope->invokeSafe(code, 0, 0);
+            failIfOrphans = shellMainScope->getBoolean("__returnValue");
+
+            if (failIfOrphans) {
+                log() << "failing due to orphaned processes detected";
+                return -4;
+            }
         }
     }
 

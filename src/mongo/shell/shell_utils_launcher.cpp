@@ -1048,6 +1048,11 @@ int KillMongoProgramInstances() {
     return returnCode;
 }
 
+bool GetMongoChildProcessIds(std::vector<ProcessId>* pids) {
+    registry.getRegisteredPids(*pids);
+    return pids->size() > 0;
+}
+
 MongoProgramScope::~MongoProgramScope() {
     DESTRUCTOR_GUARD(KillMongoProgramInstances(); ClearRawMongoProgramOutput(BSONObj(), 0);)
 }
