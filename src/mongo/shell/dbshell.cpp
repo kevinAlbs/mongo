@@ -946,7 +946,9 @@ int _main(int argc, char* argv[], char** envp) {
             }
 
             bool failIfOrphans = false;
-            const char* code = "function() { return TestData.hasOwnProperty('failIfOrphans') && TestData.failIfOrphans === true; }";
+            const char* code =
+                "function() { return TestData.hasOwnProperty('failIfOrphans') && "
+                "TestData.failIfOrphans === true; }";
             shellMainScope->invokeSafe(code, 0, 0);
             failIfOrphans = shellMainScope->getBoolean("__returnValue");
 
