@@ -57,5 +57,6 @@
             }
             assert.writeOK(batch.execute());
         }
+        rst.stopSet();
     }
 })();

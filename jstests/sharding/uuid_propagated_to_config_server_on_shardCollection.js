@@ -60,4 +60,5 @@
         assert.eq(listCollsUUID, collEntryUUID);
     }
 
+    st.stop();
 })();

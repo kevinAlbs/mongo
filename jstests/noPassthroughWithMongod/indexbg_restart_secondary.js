@@ -75,4 +75,6 @@
     assert.soon(function() {
         return 2 == secondDB.getCollection(collectionName).getIndexes().length;
     }, "Index build not resumed after restart", 30000, 50);
+
+    replTest.stopSet();
 }());
