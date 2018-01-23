@@ -4,6 +4,10 @@
 // for details.
 ((function() {
     'use strict';
+    // Do not fail if this test leaves orphan processes because testWithCerts
+    // is expected to throw before it calls stopMongod.
+    TestData.failIfOrphans = false;
+
     const HOST_TYPE = getBuildInfo().buildEnvironment.target_os;
 
     if (HOST_TYPE == "windows") {
