@@ -41,6 +41,6 @@
 
     assert.eq('world', shard2.getCollection(coll + '').findOne().hello);
 
-    MongoRunner.stopMongod(shard2);
     st.stop();
+    MongoRunner.stopMongod(shard2);
 })();
