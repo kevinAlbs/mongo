@@ -207,4 +207,5 @@ load("jstests/replsets/rslib.js");
         }
         return true;
     });
+    rs.stopSet();
 })();

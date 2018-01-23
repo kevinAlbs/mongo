@@ -95,4 +95,5 @@
 
     rst.stopSet();
     st.stop();
+    rst.stopSet();
 })();

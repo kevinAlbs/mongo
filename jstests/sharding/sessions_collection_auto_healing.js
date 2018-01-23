@@ -136,5 +136,6 @@ load('jstests/libs/sessions_collection.js');
     }
 
     st.stop();
+    rst.stopSet();
 
 })();

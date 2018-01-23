@@ -189,5 +189,6 @@
     checkCommandConfigSvr(
         {_configsvrDropDatabase: dbName}, setupFuncs.createDatabase, cleanupFuncs.dropDatabase);
 
+    MongoRunner.stopMongos(newShard);
     st.stop();
 })();

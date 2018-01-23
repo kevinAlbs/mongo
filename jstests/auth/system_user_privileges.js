@@ -98,4 +98,5 @@
     assertCountUnauthorized(conn, "local", "foo");
     assertCountUnauthorized(conn, "test", "foo");
 
+    MongoRunner.stopMongod(conn);
 })();
