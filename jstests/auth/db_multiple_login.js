@@ -28,4 +28,4 @@ test.foo.findOne();
 test.auth('reader', 'a');
 assert.writeError(test.docs.insert({value: 2}));
 test.foo.findOne();
-MongoRunner.stopMongod(conn);
+MongoRunner.stopMongod(conn, null, {user: 'admin', pwd: 'a'});

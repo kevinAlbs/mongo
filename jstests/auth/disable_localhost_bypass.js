@@ -28,5 +28,5 @@ assert.throws(function() {
 });
 
 print("SUCCESS Completed disable_localhost_bypass.js");
-MongoRunner.stopMongod(conn1);
-MongoRunner.stopMongod(conn2);
+MongoRunner.stopMongod(conn1, null, {user: "root", pwd: "pass"});
+MongoRunner.stopMongod(conn2, null, {user: "root", pwd: "pass"});

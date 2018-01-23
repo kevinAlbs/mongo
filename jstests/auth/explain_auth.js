@@ -104,4 +104,4 @@ db.auth("removeOnly", "pwd");
 testExplainAuth({find: false, count: false, group: false, remove: true, update: false});
 db.logout();
 
-MongoRunner.stopMongod(conn);
+MongoRunner.stopMongod(conn, null, {user: "adminUser", pwd: "pwd"});

@@ -42,4 +42,4 @@ assert.eq(db1.a.count(), 0);
 assert.eq(db1.b.count(), 0);
 assert.eq(db2.a.count(), 1);
 
-MongoRunner.stopMongod(m);
+MongoRunner.stopMongod(m, null, {user: 'admin', pwd: 'password'});
