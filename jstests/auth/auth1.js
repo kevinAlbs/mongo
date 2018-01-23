@@ -117,3 +117,4 @@ function runTest(m) {
 
 var m = setupTest();
 runTest(m);
+MongoRunner.stopMongod(m);

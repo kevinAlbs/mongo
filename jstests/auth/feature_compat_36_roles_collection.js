@@ -15,4 +15,5 @@
     assert(db.runCommand({rolesInfo: "role1"}).roles[0].role === "role1");
 
     print("SUCCESS auth-feature-compat-36-roles-collection.js");
+    MongoRunner.stopMongod(db);
 })();
