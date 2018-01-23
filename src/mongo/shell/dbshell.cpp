@@ -932,7 +932,7 @@ int _main(int argc, char* argv[], char** envp) {
 
         // Check if the process left any running child processes.
         std::vector<ProcessId> pids;
-        if (mongo::shell_utils::GetMongoChildProcessIds(&pids)) {
+        if (mongo::shell_utils::GetRunningMongoChildProcessIds(&pids)) {
             cout << "terminating the following orphan process pids: ";
             std::copy(pids.begin(), pids.end(), std::ostream_iterator<ProcessId>(cout, " "));
             cout << endl;

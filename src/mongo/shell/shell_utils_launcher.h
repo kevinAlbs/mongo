@@ -57,8 +57,8 @@ struct MongoProgramScope {
 };
 int KillMongoProgramInstances();
 
-// Returns true if there are child processes.
-bool GetMongoChildProcessIds(std::vector<ProcessId>* pids);
+// Returns true if there are running child processes.
+bool GetRunningMongoChildProcessIds(std::vector<ProcessId>* pids);
 
 void installShellUtilsLauncher(Scope& scope);
 
