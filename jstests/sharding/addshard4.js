@@ -56,6 +56,7 @@
     printjson(result);
     assert.eq(result, true);
 
+    r.stopSet();
     s.stop();
 
 })();

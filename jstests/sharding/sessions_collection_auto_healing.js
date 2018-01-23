@@ -135,6 +135,7 @@ load('jstests/libs/sessions_collection.js');
         validateSessionsCollection(shard, true, false);
     }
 
+    rst.stopSet();
     st.stop();
 
 })();

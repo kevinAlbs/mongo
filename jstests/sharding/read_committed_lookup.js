@@ -59,6 +59,7 @@ load("jstests/libs/read_committed_lib.js");  // For testReadCommittedLookup
     assert.commandWorked(st.s.adminCommand({shardCollection: 'test.local', key: {foreignKey: 1}}));
     testReadCommittedLookup(st.s.getDB("test"), shardSecondary, rst);
 
+    rst.stopSet();
     st.stop();
 
 })();
