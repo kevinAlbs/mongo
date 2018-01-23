@@ -16,6 +16,7 @@
 
     // too high a count
     clearRawMongoProgramOutput();
+    MongoRunner.stopMongod(mongo);
     mongo = MongoRunner.runMongod({setParameter: 'replWriterThreadCount=257'});
     assert.soon(function() {
         return rawMongoProgramOutput().match("replWriterThreadCount must be between 1 and 256");
@@ -23,6 +24,7 @@
 
     // proper count
     clearRawMongoProgramOutput();
+    MongoRunner.stopMongod(mongo);
     mongo = MongoRunner.runMongod({setParameter: 'replWriterThreadCount=24'});
     assert.neq(null, mongo, "mongod failed to start with a suitable replWriterThreadCount value");
     assert(!rawMongoProgramOutput().match("replWriterThreadCount must be between 1 and 256"),
@@ -35,4 +37,5 @@
     // setParameter to ensure it is not possible
     assert.commandFailed(
         mongo.getDB("admin").runCommand({setParameter: 1, replWriterThreadCount: 1}));
+    MongoRunner.stopMongod(mongo);
 }());

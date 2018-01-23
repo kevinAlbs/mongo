@@ -116,4 +116,5 @@
 
     assert.eq(config.system.sessions.find().count(), 11);
 
+    MongoRunner.stopMongod(conn);
 })();
