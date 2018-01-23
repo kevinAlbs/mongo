@@ -93,5 +93,6 @@
     assert(logicalTimeCanBeProcessed(rst.getPrimary().getDB("test")));
     assert(logicalTimeCanBeProcessed(st.configRS.getPrimary().getDB("test")));
 
+    rst.stopSet();
     st.stop();
 })();
