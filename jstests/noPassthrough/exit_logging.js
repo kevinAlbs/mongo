@@ -3,9 +3,9 @@
  */
 
 (function() {
-    // Do not fail if this test leaves orphan processes because the sharding test leaves
+    // Do not fail if this test leaves unterminated processes because the sharding test leaves
     // unterminated shard mongod processes.
-    TestData.failIfOrphans = false;
+    TestData.failIfUnterminatedProcesses = false;
 
     function makeShutdownByCrashFn(crashHow) {
         return function(conn) {

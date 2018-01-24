@@ -4,9 +4,9 @@
 // for details.
 ((function() {
     'use strict';
-    // Do not fail if this test leaves orphan processes because testWithCerts
+    // Do not fail if this test leaves unterminated processes because testWithCerts
     // is expected to throw before it calls stopMongod.
-    TestData.failIfOrphans = false;
+    TestData.failIfUnterminatedProcesses = false;
 
     const HOST_TYPE = getBuildInfo().buildEnvironment.target_os;
 

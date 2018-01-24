@@ -15,9 +15,9 @@
         return;
     }
 
-    // Do not fail if this test leaves orphan processes because testSockOptions
+    // Do not fail if this test leaves unterminated processes because testSockOptions
     // is expected to throw before it calls stopMongod.
-    TestData.failIfOrphans = false;
+    TestData.failIfUnterminatedProcesses = false;
 
     var doesLogMatchRegex = function(logArray, regex) {
         for (let i = (logArray.length - 1); i >= 0; i--) {

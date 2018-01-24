@@ -1,8 +1,8 @@
 load('jstests/multiVersion/libs/multi_rs.js');
 
-// Do not fail if this test leaves orphan processes because this file expects replset1.js to throw
+// Do not fail if this test leaves unterminated processes because this file expects replset1.js to throw
 // for invalid SSL options.
-TestData.failIfOrphans = false;
+TestData.failIfUnterminatedProcesses = false;
 
 //=== Shared SSL testing library functions and constants ===
 
