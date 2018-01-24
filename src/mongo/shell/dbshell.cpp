@@ -931,9 +931,11 @@ int _main(int argc, char* argv[], char** envp) {
         }
 
         // Check if the process left any running child processes.
-        std::vector<ProcessId> pids = mongo::shell_utils::GetRunningMongoChildProcessIds()
+        std::vector<ProcessId> pids = mongo::shell_utils::GetRunningMongoChildProcessIds();
+
         if (!pids.empty()) {
-            cout << "terminating the following processes started by " << shellGlobalParams.files[i] << ": ";
+            cout << "terminating the following processes started by " << shellGlobalParams.files[i]
+                 << ": ";
             std::copy(pids.begin(), pids.end(), std::ostream_iterator<ProcessId>(cout, " "));
             cout << endl;
 
@@ -952,7 +954,8 @@ int _main(int argc, char* argv[], char** envp) {
 
             if (failIfUnterminatedProcesses) {
                 cout << "exiting with failure due to unterminated processes detected";
-                cout << "a call to MongoRunner.stopMongod(), ReplSetTest#stopSet(), or ShardingTest#stop() may be missing from the test";
+                cout << "a call to MongoRunner.stopMongod(), ReplSetTest#stopSet(), or "
+                        "ShardingTest#stop() may be missing from the test";
                 return -6;
             }
         }
