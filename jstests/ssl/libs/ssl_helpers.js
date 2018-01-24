@@ -1,7 +1,7 @@
 load('jstests/multiVersion/libs/multi_rs.js');
 
-// Do not fail if this test leaves unterminated processes because this file expects replset1.js to throw
-// for invalid SSL options.
+// Do not fail if this test leaves unterminated processes because this file expects replset1.js to
+// throw for invalid SSL options.
 TestData.failIfUnterminatedProcesses = false;
 
 //=== Shared SSL testing library functions and constants ===

@@ -25,6 +25,9 @@
     //
     // TODO SERVER-32672: remove this flag.
     TestData.skipGossipingClusterTime = true;
+    // Skip db hash check because sharding test is left with connections not authenticated.
+    // TODO: authenticate sharding test so the db hash check can succeed in ShardingTest#stop().
+    TestData.skipCheckDBHashes = true;
 
     const key = "jstests/libs/key1";
 
