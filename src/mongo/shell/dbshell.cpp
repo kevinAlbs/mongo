@@ -931,9 +931,9 @@ int _main(int argc, char* argv[], char** envp) {
         }
 
         // Check if the process left any running child processes.
-        std::vector<ProcessId> pids;
-        if (mongo::shell_utils::GetRunningMongoChildProcessIds(&pids)) {
-            cout << "terminating the following orphan process pids: ";
+        std::vector<ProcessId> pids = mongo::shell_utils::GetRunningMongoChildProcessIds()
+        if (!pids.empty()) {
+            cout << "terminating the following processes started by " << shellGlobalParams.files[i] << ": ";
             std::copy(pids.begin(), pids.end(), std::ostream_iterator<ProcessId>(cout, " "));
             cout << endl;
 
@@ -943,16 +943,17 @@ int _main(int argc, char* argv[], char** envp) {
                 return -3;
             }
 
-            bool failIfOrphans = false;
+            bool failIfUnterminatedProcesses = false;
             const char* code =
-                "function() { return TestData.hasOwnProperty('failIfOrphans') && "
-                "TestData.failIfOrphans === true; }";
+                "function() { return TestData.hasOwnProperty('failIfUnterminatedProcesses') && "
+                "TestData.failIfUnterminatedProcesses; }";
             shellMainScope->invokeSafe(code, 0, 0);
-            failIfOrphans = shellMainScope->getBoolean("__returnValue");
+            failIfUnterminatedProcesses = shellMainScope->getBoolean("__returnValue");
 
-            if (failIfOrphans) {
-                cout << "failing due to orphaned processes detected";
-                return -4;
+            if (failIfUnterminatedProcesses) {
+                cout << "exiting with failure due to unterminated processes detected";
+                cout << "a call to MongoRunner.stopMongod(), ReplSetTest#stopSet(), or ShardingTest#stop() may be missing from the test";
+                return -6;
             }
         }
     }

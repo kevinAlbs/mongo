@@ -1048,7 +1048,7 @@ int KillMongoProgramInstances() {
     return returnCode;
 }
 
-bool GetRunningMongoChildProcessIds(std::vector<ProcessId>* pids) {
+std::vector<ProcessId> GetRunningMongoChildProcessIds() {
     std::vector<ProcessId> registeredPids;
     registry.getRegisteredPids(registeredPids);
     // Only return processes that are still alive. A client may have started a program using a mongo
@@ -1058,10 +1058,11 @@ bool GetRunningMongoChildProcessIds(std::vector<ProcessId>* pids) {
                  registeredPids.end(),
                  std::back_inserter(*pids),
                  [=](const ProcessId& pid) {
-                     bool isDead = wait_for_pid(pid, false /* block */, NULL /* exit code */);
+                     const bool block = false;
+                     bool isDead = wait_for_pid(pid, block);
                      return !isDead;
                  });
-    return pids->size() > 0;
+    return std::move(pids);
 }
 
 MongoProgramScope::~MongoProgramScope() {
