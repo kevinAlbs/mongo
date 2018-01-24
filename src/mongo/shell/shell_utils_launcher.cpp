@@ -1049,20 +1049,20 @@ int KillMongoProgramInstances() {
 }
 
 std::vector<ProcessId> GetRunningMongoChildProcessIds() {
-    std::vector<ProcessId> registeredPids;
+    std::vector<ProcessId> registeredPids, outPids;
     registry.getRegisteredPids(registeredPids);
     // Only return processes that are still alive. A client may have started a program using a mongo
     // helper but terminated another way. E.g. if a mongod is started with MongoRunner.startMongod
     // but exited with db.shutdownServer.
     std::copy_if(registeredPids.begin(),
                  registeredPids.end(),
-                 std::back_inserter(*pids),
+                 std::back_inserter(outPids),
                  [=](const ProcessId& pid) {
                      const bool block = false;
                      bool isDead = wait_for_pid(pid, block);
                      return !isDead;
                  });
-    return std::move(pids);
+    return outPids;
 }
 
 MongoProgramScope::~MongoProgramScope() {
