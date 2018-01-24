@@ -3,7 +3,8 @@
 (function() {
     'use strict';
     print("START auth-feature-compat-36-roles-collection.js");
-    var db = MongoRunner.runMongod({}).getDB("test");
+    var conn = MongoRunner.runMongod({});
+    var db = conn.getDB("test");
 
     assert.commandWorked(db.adminCommand({setFeatureCompatibilityVersion: "3.4"}));
     assert.commandWorked(db.runCommand(
@@ -15,5 +16,5 @@
     assert(db.runCommand({rolesInfo: "role1"}).roles[0].role === "role1");
 
     print("SUCCESS auth-feature-compat-36-roles-collection.js");
-    MongoRunner.stopMongod(db);
+    MongoRunner.stopMongod(conn);
 })();

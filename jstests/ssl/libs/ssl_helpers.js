@@ -59,15 +59,8 @@ var replShouldFail = function(name, opt1, opt2) {
     ssl_options1 = opt1;
     ssl_options2 = opt2;
     ssl_name = name;
-    replTest = null;
     assert.throws(load, [replSetTestFile], "This setup should have failed");
-    // clean up to continue running...
-    if (replTest) {
-        jsTest.log("We got here");
-        // 1. I don't think this check is correct because it's assuming that the replset1.js
-        // uses a global "replTest" variable, which is actually scoped.
-        replTest.stopSet();
-    }
+    // TODO: this leaves running mongod processes.
 };
 
 /**
