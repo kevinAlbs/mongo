@@ -1,5 +1,9 @@
 load('jstests/multiVersion/libs/multi_rs.js');
 
+// Do not fail if this test leaves orphan processes because this file expects replset1.js to throw
+// for invalid SSL options.
+
+TestData.checkIfOrphans = false;
 //=== Shared SSL testing library functions and constants ===
 
 var KEYFILE = "jstests/libs/key1";
@@ -59,6 +63,9 @@ var replShouldFail = function(name, opt1, opt2) {
     assert.throws(load, [replSetTestFile], "This setup should have failed");
     // clean up to continue running...
     if (replTest) {
+        jsTest.log("We got here");
+        // 1. I don't think this check is correct because it's assuming that the replset1.js
+        // uses a global "replTest" variable, which is actually scoped.
         replTest.stopSet();
     }
 };

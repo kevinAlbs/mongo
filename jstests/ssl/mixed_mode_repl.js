@@ -2,7 +2,7 @@
 // the sslSpecial test set. This test must be run with --use-ssl
 
 load("jstests/ssl/libs/ssl_helpers.js");
-/*
+
 // Verify that requireSSL allows ssl connections
 print("=== Testing requireSSL/requireSSL cluster ===");
 replShouldSucceed("require-require", requireSSL, requireSSL);
@@ -14,7 +14,7 @@ replShouldSucceed("allow-prefer", allowSSL, preferSSL);
 // Test mixed sslMode preferSSL/requireSSL
 print("=== Testing preferSSL/requireSSL cluster ===");
 replShouldSucceed("prefer-require", preferSSL, requireSSL);
-*/
+
 // Test mixed sslMode disabled/preferSSL - should fail
 print("=== Testing allowSSL/requireSSL cluster - SHOULD FAIL ===");
 replShouldFail("allow-require", allowSSL, requireSSL);
