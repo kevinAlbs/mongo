@@ -931,7 +931,7 @@ int _main(int argc, char* argv[], char** envp) {
         }
 
         // Check if the process left any running child processes.
-        std::vector<ProcessId> pids = mongo::shell_utils::GetRunningMongoChildProcessIds();
+        std::vector<ProcessId> pids = mongo::shell_utils::getRunningMongoChildProcessIds();
 
         if (!pids.empty()) {
             cout << "terminating the following processes started by " << shellGlobalParams.files[i]
@@ -946,15 +946,15 @@ int _main(int argc, char* argv[], char** envp) {
             }
 
             bool failIfUnterminatedProcesses = false;
-            const char* code =
+            const StringData code =
                 "function() { return TestData.hasOwnProperty('failIfUnterminatedProcesses') && "
-                "TestData.failIfUnterminatedProcesses; }";
-            shellMainScope->invokeSafe(code, 0, 0);
+                "TestData.failIfUnterminatedProcesses; }"_sd;
+            shellMainScope->invokeSafe(code.rawData(), 0, 0);
             failIfUnterminatedProcesses = shellMainScope->getBoolean("__returnValue");
 
             if (failIfUnterminatedProcesses) {
-                cout << "exiting with failure due to unterminated processes detected" << endl;
-                cout << "a call to MongoRunner.stopMongod(), ReplSetTest#stopSet(), or "
+                cout << "exiting with a failure due to unterminated processes" << endl
+                     << "a call to MongoRunner.stopMongod(), ReplSetTest#stopSet(), or "
                         "ShardingTest#stop() may be missing from the test"
                      << endl;
                 return -6;
@@ -1155,7 +1155,6 @@ int wmain(int argc, wchar_t* argvW[], wchar_t* envpW[]) {
     try {
         WindowsCommandLine wcl(argc, argvW, envpW);
         returnCode = _main(argc, wcl.argv(), wcl.envp());
-        cout << flush;
     } catch (mongo::DBException& e) {
         cerr << "exception: " << e.what() << endl;
         returnCode = 1;
@@ -1167,7 +1166,6 @@ int main(int argc, char* argv[], char** envp) {
     int returnCode;
     try {
         returnCode = _main(argc, argv, envp);
-        cout << flush;
     } catch (mongo::DBException& e) {
         cerr << "exception: " << e.what() << endl;
         returnCode = 1;
