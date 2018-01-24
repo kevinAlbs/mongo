@@ -953,9 +953,10 @@ int _main(int argc, char* argv[], char** envp) {
             failIfUnterminatedProcesses = shellMainScope->getBoolean("__returnValue");
 
             if (failIfUnterminatedProcesses) {
-                cout << "exiting with failure due to unterminated processes detected";
+                cout << "exiting with failure due to unterminated processes detected" << endl;
                 cout << "a call to MongoRunner.stopMongod(), ReplSetTest#stopSet(), or "
-                        "ShardingTest#stop() may be missing from the test";
+                        "ShardingTest#stop() may be missing from the test"
+                     << endl;
                 return -6;
             }
         }
