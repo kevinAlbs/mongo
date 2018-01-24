@@ -201,7 +201,7 @@
         // Wait for election oplog entry to be replicated, to avoid rollbacks later on.
         rs.awaitReplication();
 
-        rs.stopSet();
     }
 
+    rs.stopSet();
 })();
