@@ -1154,6 +1154,7 @@ int wmain(int argc, wchar_t* argvW[], wchar_t* envpW[]) {
     try {
         WindowsCommandLine wcl(argc, argvW, envpW);
         returnCode = _main(argc, wcl.argv(), wcl.envp());
+        cout << flush;
     } catch (mongo::DBException& e) {
         cerr << "exception: " << e.what() << endl;
         returnCode = 1;
@@ -1165,6 +1166,7 @@ int main(int argc, char* argv[], char** envp) {
     int returnCode;
     try {
         returnCode = _main(argc, argv, envp);
+        cout << flush;
     } catch (mongo::DBException& e) {
         cerr << "exception: " << e.what() << endl;
         returnCode = 1;
