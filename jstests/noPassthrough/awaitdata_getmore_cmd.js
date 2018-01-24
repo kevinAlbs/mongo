@@ -174,4 +174,5 @@
     assert.eq(cmdRes.cursor.nextBatch.length, 1);
     assert.docEq(cmdRes.cursor.nextBatch[0], {_id: "match", x: 1});
     insertshell();
+    MongoRunner.stopMongod(mongo);
 })();

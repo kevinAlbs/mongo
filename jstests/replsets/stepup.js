@@ -51,4 +51,5 @@ load("jstests/replsets/rslib.js");
     assert.commandWorked(res);
     assert.eq(secondary, rst.getPrimary());
 
+    rst.stopSet();
 })();

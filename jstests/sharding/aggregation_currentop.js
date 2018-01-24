@@ -623,4 +623,5 @@
     assert.commandWorked(shardAdminDB.killOp(op.opid));
 
     awaitShell();
+    st.stop();
 })();

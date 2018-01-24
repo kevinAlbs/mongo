@@ -18,5 +18,6 @@
     admin.auth("foo", "bar");
 
     admin.copyDatabase('test', 'test', fromDb.host);
-
+    MongoRunner.stopMongod(fromDb);
+    MongoRunner.stopMongod(toDb);
 })();
