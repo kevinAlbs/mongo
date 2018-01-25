@@ -39,6 +39,7 @@
     };
 
     assert.throws(function() {
+        // TODO: this leaves a running mongod process.
         testWithCerts("server.pem", "client.pem");
     });
     assert.doesNotThrow(function() {
