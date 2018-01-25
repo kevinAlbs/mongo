@@ -947,7 +947,8 @@ int _main(int argc, char* argv[], char** envp) {
 
             bool failIfUnterminatedProcesses = false;
             const StringData code =
-                "function() { return TestData.hasOwnProperty('failIfUnterminatedProcesses') && "
+                "function() { return TestData && "
+                "TestData.hasOwnProperty('failIfUnterminatedProcesses') && "
                 "TestData.failIfUnterminatedProcesses; }"_sd;
             shellMainScope->invokeSafe(code.rawData(), 0, 0);
             failIfUnterminatedProcesses = shellMainScope->getBoolean("__returnValue");
