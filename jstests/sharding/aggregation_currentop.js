@@ -25,9 +25,6 @@
     //
     // TODO SERVER-32672: remove this flag.
     TestData.skipGossipingClusterTime = true;
-    // Skip db hash check because sharding test is left with connections not authenticated.
-    // TODO: authenticate sharding test so the db hash check can succeed in ShardingTest#stop().
-    TestData.skipCheckDBHashes = true;
 
     const key = "jstests/libs/key1";
 
@@ -544,6 +541,9 @@
 
     // Test that the allUsers parameter is ignored when authentication is disabled.
     restartReplSet(shardRS, {shardsvr: null, keyFile: null});
+    // Explicitly set the keyFile to null. If ReplSetTest#stopSet sees a keyFile property, it
+    // attempts to auth before dbhash checks.
+    shardRS.keyFile = null;
 
     // Ensure that there is at least one other connection present.
     const otherConn = new Mongo(shardConn.host);
