@@ -276,12 +276,15 @@ def find_lock_manager_holders(graph, thread_dict, show):
         lock_request_ptr = lock_request["next"]
 
 def find_pthread_mutex_holder(graph, thread_dict, show):
+    # Skip searching for pthread_mutex_lock if there is already a call to std::mutex::lock in the call stack.
+    if find_frame(r'std::mutex::lock\(\)') != None:
+        return
     frame = gdb.newest_frame()
 
     # It looks like there isn't a block for pthread_mutex_lock because there isn't debug info for
     # pthread_mutex_lock(). So just check the stack frame name.
     while frame:
-        if re.match(r'pthread_mutex_lock', frame.name()):
+        if re.match(r"pthread_mutex_lock", frame.name()):
             break
         frame = frame.older()
 
@@ -289,7 +292,7 @@ def find_pthread_mutex_holder(graph, thread_dict, show):
         return
 
     # Retrieve the mutex struct by looking at register r8 if available.
-    mutex_addr = frame.read_register('r8')
+    mutex_addr = frame.read_register("r8")
     pthread_mutex_t_ptr = gdb.parse_and_eval("((pthread_mutex_t*)0x%x)" % mutex_addr)
     mutex_holder_lwpid = int(pthread_mutex_t_ptr.dereference()["__data"]["__owner"])
 
