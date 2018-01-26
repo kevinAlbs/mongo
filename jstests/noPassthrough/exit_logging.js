@@ -10,7 +10,6 @@
             assert.commandWorked(admin.runCommand(
                 {configureFailPoint: "crashOnShutdown", mode: "alwaysOn", data: {how: crashHow}}));
             admin.shutdownServer();
-            assert.eq(crashHow, waitProgram(conn.pid));
         };
     }
 
