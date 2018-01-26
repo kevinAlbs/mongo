@@ -523,12 +523,13 @@ CommandRegistry* globalCommandRegistry() {
     return reg;
 }
 
-pthread_mutex_t mutex;
+
 void* thread_func(void* arg) {
+    pthread_mutex_t* mutex = (pthread_mutex_t*)arg;
     printf("locking 1\n");
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(mutex);
     printf("locking 2\n");
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(mutex);
     pthread_exit(NULL);
 }
 
@@ -557,8 +558,9 @@ public:
                      const BSONObj& cmdObj,
                      BSONObjBuilder& result) {
         pthread_t thread = (pthread_t)0;
-        pthread_create(&thread, NULL /* attr */, thread_func, NULL);
+        pthread_mutex_t mutex;
         pthread_mutex_init(&mutex, NULL);
+        pthread_create(&thread, NULL /* attr */, thread_func, &mutex);
         void* ret = NULL;
         pthread_join(thread, &ret);
         return true;
