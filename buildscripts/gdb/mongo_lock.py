@@ -278,7 +278,7 @@ def find_lock_manager_holders(graph, thread_dict, show):
 def find_pthread_mutex_holder(graph, thread_dict, show):
     # Skip searching for pthread_mutex_lock if there is already a call to std::mutex::lock in
     # the call stack.
-    if find_frame(r'std::mutex::lock\(\)') != None:
+    if find_frame(r'std::mutex::lock\(\)') is not None:
         return
     frame = gdb.newest_frame()
 
