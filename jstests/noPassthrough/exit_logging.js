@@ -3,9 +3,6 @@
  */
 
 (function() {
-    // Do not fail if this test leaves unterminated processes because the sharding test leaves
-    // unterminated shard mongod processes.
-    TestData.failIfUnterminatedProcesses = false;
 
     function makeShutdownByCrashFn(crashHow) {
         return function(conn) {
@@ -13,6 +10,7 @@
             assert.commandWorked(admin.runCommand(
                 {configureFailPoint: "crashOnShutdown", mode: "alwaysOn", data: {how: crashHow}}));
             admin.shutdownServer();
+            assert.eq(crashHow, waitProgram(conn.pid));
         };
     }
 
@@ -112,6 +110,7 @@
         };
 
         runAllTests(mongosLauncher);
+        st.stop();
     }());
 
 }());

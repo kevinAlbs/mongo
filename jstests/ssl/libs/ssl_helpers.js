@@ -60,7 +60,7 @@ var replShouldFail = function(name, opt1, opt2) {
     ssl_options2 = opt2;
     ssl_name = name;
     assert.throws(load, [replSetTestFile], "This setup should have failed");
-    // TODO: this leaves running mongod processes.
+    // Note: this leaves running mongod processes.
 };
 
 /**
