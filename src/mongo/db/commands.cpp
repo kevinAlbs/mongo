@@ -523,4 +523,47 @@ CommandRegistry* globalCommandRegistry() {
     return reg;
 }
 
+pthread_mutex_t mutex;
+void* thread_func(void* arg) {
+    printf("locking 1\n");
+    pthread_mutex_lock(&mutex);
+    printf("locking 2\n");
+    pthread_mutex_lock(&mutex);
+    pthread_exit(NULL);
+}
+
+class CmdDeadlock final : public BasicCommand {
+public:
+    CmdDeadlock() : BasicCommand("deadlock") {}
+
+    void help(std::stringstream& help) const final {
+        help << "when you just want to deadlock yourself";
+    }
+
+    Status checkAuthForOperation(OperationContext* opCtx, const std::string& dbname, const BSONObj& cmdObj) {
+        return Status::OK();
+    }
+
+    bool supportsWriteConcern(const BSONObj& cmd) const {
+        return false;
+    }
+
+    bool slaveOk() const {
+        return true;
+    }
+
+    bool run(OperationContext* opCtx,
+                     const std::string& db,
+                     const BSONObj& cmdObj,
+                     BSONObjBuilder& result) {
+        pthread_t thread = (pthread_t)0;
+        pthread_create(&thread, NULL /* attr */, thread_func, NULL);
+        pthread_mutex_init(&mutex, NULL);
+        void* ret = NULL;
+        pthread_join(thread, &ret);
+        return true;
+    }
+
+} cmdDeadlock;
+
 }  // namespace mongo
