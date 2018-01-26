@@ -276,21 +276,17 @@ def find_lock_manager_holders(graph, thread_dict, show):
         lock_request_ptr = lock_request["next"]
 
 def find_pthread_mutex_holder(graph, thread_dict, show):
-    # Skip searching for pthread_mutex_lock if there is already a call to std::mutex::lock in
-    # the call stack.
-    if find_frame(r'std::mutex::lock\(\)') is not None:
-        return
     frame = gdb.newest_frame()
 
-    # It looks like there isn't a block for pthread_mutex_lock because there isn't debug info for
-    # pthread_mutex_lock(). So just check the stack frame name.
+    # Cannot access the block inside a pthread_mutex_lock frame, so just check the
+    # stack frame name.
     while frame:
         if re.match(r"pthread_mutex_lock", frame.name()):
             break
         frame = frame.older()
 
     if not frame:
-        return
+        return False
 
     # Retrieve the mutex struct by looking at register r8 if available.
     mutex_addr = frame.read_register("r8")
@@ -321,6 +317,7 @@ def find_pthread_mutex_holder(graph, thread_dict, show):
                        Lock(long(mutex_addr), "pthread_mutex"))
         graph.add_edge(Lock(long(mutex_addr), "pthread_mutex"),
                        Thread(mutex_holder_id, mutex_holder_lwpid))
+    return True
 
 
 def get_locks(graph, thread_dict, show=False):
@@ -329,8 +326,10 @@ def get_locks(graph, thread_dict, show=False):
             if not thread.is_valid():
                 continue
             thread.switch()
-            find_pthread_mutex_holder(graph, thread_dict, show)
-            find_mutex_holder(graph, thread_dict, show)
+            if not find_pthread_mutex_holder(graph, thread_dict, show):
+                # Only search for calls to std::mutex::lock if there are no calls
+                # to pthread_mutex_lock so we do not display duplicate locks.
+                find_mutex_holder(graph, thread_dict, show)
             find_lock_manager_holders(graph, thread_dict, show)
         except gdb.error as err:
             print("Ignoring GDB error '%s' in get_locks" % str(err))
